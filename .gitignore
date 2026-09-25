@@ -1,0 +1,37 @@
+# Python sanal ortamı
+.venv/
+venv/
+
+# Gerçek ürün verileri
+data/
+*.xml
+*.jsonl
+*.jsonl.gz
+
+# Python geçici dosyaları
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Qdrant ve model dosyaları
+qdrant_storage/
+storage/
+.cache/
+
+# Gizli ayarlar
+.env
+.env.*
+!.env.example
+
+# Editör ve macOS dosyaları
+.DS_Store
+.idea/
+.vscode/
+
+# Kişisel çalıştırma notu
+Run.txt
+
+# Loglar
+*.log

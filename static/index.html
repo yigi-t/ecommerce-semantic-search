@@ -1,0 +1,3455 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeFacto Semantic Search</title>
+<style>
+  :root {
+    --ink:#1a1a1a;
+    --muted:#626262;
+    --line:#dfdfdf;
+    --accent:#0a5c36;
+    --accent-soft:#eef6f1;
+    --accent-line:#bdd8c9;
+    --warning:#8a4f00;
+    --surface:#fff;
+  }
+  * { box-sizing:border-box; margin:0; }
+  [hidden] { display:none !important; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);
+    background:#fafafa;
+  }
+  button,input,select { font:inherit; }
+  button { cursor:pointer; }
+  header { padding:28px 20px 12px; max-width:1100px; margin:0 auto; }
+  .title-row { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+  h1 { font-size:20px; font-weight:650; letter-spacing:-0.01em; }
+  .badge {
+    padding:4px 9px;
+    border-radius:999px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+  .intro { margin-top:7px; color:var(--muted); font-size:13px; line-height:1.45; }
+  form { display:flex; gap:8px; margin-top:14px; }
+  input {
+    flex:1;
+    min-width:0;
+    min-height:46px;
+    padding:12px 16px;
+    font-size:16px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    outline:none;
+    background:var(--surface);
+  }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(10,92,54,.12); }
+  .search-button {
+    min-height:46px;
+    padding:12px 24px;
+    border:0;
+    border-radius:10px;
+    background:var(--ink);
+    color:#fff;
+    font-size:15px;
+    font-weight:650;
+  }
+  .search-button:disabled { cursor:wait; opacity:.68; }
+  .size-preference {
+    margin-top:10px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--surface);
+  }
+  .size-preference-toggle {
+    width:100%;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:10px 13px;
+    border:0;
+    border-radius:11px;
+    background:transparent;
+    color:var(--ink);
+    text-align:left;
+  }
+  .size-preference-toggle:hover { background:#f7f7f7; }
+  .size-preference-title { display:block; font-size:13px; font-weight:750; }
+  .size-preference-summary {
+    display:block;
+    margin-top:2px;
+    color:var(--muted);
+    font-size:11px;
+    line-height:1.35;
+  }
+  .size-preference-toggle-label {
+    flex:0 0 auto;
+    color:var(--accent);
+    font-size:12px;
+    font-weight:750;
+  }
+  .size-preference-panel {
+    padding:13px;
+    border-top:1px solid var(--line);
+  }
+  .size-preference-help {
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+  }
+  .size-preference-fields {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    margin-top:12px;
+  }
+  .size-field { min-width:0; }
+  .size-field > span,
+  .size-field legend {
+    display:block;
+    margin-bottom:5px;
+    color:#444;
+    font-size:11px;
+    font-weight:750;
+  }
+  .size-field select {
+    width:100%;
+    min-height:44px;
+    padding:8px 30px 8px 10px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    outline:none;
+    background:#fff;
+    color:var(--ink);
+  }
+  .size-field select:focus {
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(10,92,54,.12);
+  }
+  .size-field-group {
+    grid-column:span 2;
+    min-width:0;
+    padding:0;
+    border:0;
+  }
+  .jean-size-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .size-preference-actions {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:12px;
+  }
+  .size-preference-clear {
+    min-height:44px;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:#fff;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+  }
+  .size-preference-clear:hover:not(:disabled) {
+    border-color:var(--accent-line);
+    color:var(--accent);
+  }
+  .size-preference-clear:disabled { cursor:not-allowed; opacity:.5; }
+  .size-preference-status {
+    min-height:18px;
+    color:var(--accent);
+    font-size:12px;
+  }
+  button:focus-visible,a:focus-visible {
+    outline:3px solid var(--accent);
+    outline-offset:2px;
+  }
+  #meta {
+    max-width:1100px;
+    min-height:24px;
+    margin:8px auto 0;
+    padding:0 20px;
+    font-size:13px;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .meta-row { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+  .meta-label { margin-right:3px; }
+  .chip {
+    display:inline-block;
+    padding:2px 10px;
+    border-radius:20px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:12px;
+  }
+  .warn { margin-top:3px; color:var(--warning); }
+  .result-count { margin-top:2px; color:#444; }
+  .product-view-controls {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    max-width:1100px;
+    margin:8px auto 0;
+    padding:0 20px;
+  }
+  .product-tabs {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    overflow-x:auto;
+  }
+  .product-tab {
+    flex:0 0 auto;
+    min-height:44px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#fff;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+  }
+  .product-tab[aria-selected="true"] {
+    border-color:var(--accent-line);
+    background:var(--accent-soft);
+    color:var(--accent);
+  }
+  .product-tab-count {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:20px;
+    min-height:20px;
+    margin-left:5px;
+    padding:1px 6px;
+    border-radius:999px;
+    background:var(--accent);
+    color:#fff;
+    font-size:11px;
+  }
+  .outfit {
+    max-width:1060px;
+    margin:18px auto 4px;
+    padding:20px;
+    border:1px solid var(--accent-line);
+    border-radius:16px;
+    background:linear-gradient(140deg,#f5faf7 0%,#fff 72%);
+    box-shadow:0 12px 34px rgba(28,69,48,.08);
+  }
+  .outfit-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+  .eyebrow {
+    color:var(--accent);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .outfit h2 { margin-top:5px; font-size:20px; line-height:1.25; letter-spacing:-.015em; }
+  .outfit-summary { max-width:720px; margin-top:5px; color:var(--muted); font-size:13px; line-height:1.5; }
+  .outfit-close {
+    min-width:72px;
+    min-height:40px;
+    padding:8px 13px;
+    border:1px solid var(--accent-line);
+    border-radius:9px;
+    background:#fff;
+    color:var(--accent);
+    font-size:13px;
+    font-weight:650;
+  }
+  .outfit-source {
+    display:grid;
+    grid-template-columns:92px minmax(0,1fr);
+    align-items:center;
+    gap:14px;
+    max-width:560px;
+    margin-top:14px;
+    padding:11px;
+    border-radius:12px;
+    background:#fff;
+    border:1px solid var(--accent-line);
+    box-shadow:0 8px 20px rgba(28,69,48,.07);
+  }
+  .source-media {
+    width:92px;
+    aspect-ratio:3/4;
+    overflow:hidden;
+    border-radius:9px;
+    background:
+      linear-gradient(135deg,rgba(10,92,54,.04),rgba(10,92,54,.11)),
+      #efefef;
+  }
+  .source-media img {
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+  }
+  .source-copy { min-width:0; }
+  .source-label {
+    display:block;
+    color:var(--accent);
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .source-title {
+    display:block;
+    margin-top:5px;
+    font-size:14px;
+    font-weight:700;
+    line-height:1.35;
+  }
+  .source-detail {
+    display:block;
+    margin-top:5px;
+    color:var(--muted);
+    font-size:12px;
+  }
+  .source-price {
+    margin-top:8px;
+    color:var(--ink);
+    font-size:14px;
+    font-weight:750;
+  }
+  .outfit-status { min-height:20px; margin-top:12px; color:var(--muted); font-size:13px; }
+  #grid,.outfit-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+    gap:16px;
+  }
+  #grid { position:relative; max-width:1100px; margin:16px auto 60px; padding:0 20px; }
+  #grid > .outfit {
+    position:absolute;
+    z-index:20;
+    width:min(900px,calc(100vw - 24px));
+    max-width:none;
+    max-height:calc(100vh - 24px);
+    max-height:calc(100dvh - 24px);
+    margin:0;
+    overflow:auto;
+    overscroll-behavior:contain;
+  }
+  .empty-state {
+    grid-column:1 / -1;
+    padding:34px 20px;
+    border:1px dashed var(--line);
+    border-radius:12px;
+    background:#fff;
+    color:var(--muted);
+    text-align:center;
+    font-size:13px;
+    line-height:1.5;
+  }
+  .outfit-grid { margin-top:7px; }
+  .card {
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--surface);
+  }
+  .card-link {
+    min-width:0;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    color:inherit;
+    text-decoration:none;
+  }
+  .media {
+    position:relative;
+    width:100%;
+    aspect-ratio:3/4;
+    overflow:hidden;
+    background:
+      linear-gradient(135deg,rgba(10,92,54,.04),rgba(10,92,54,.11)),
+      #efefef;
+  }
+  .media img { width:100%; height:100%; display:block; object-fit:cover; }
+  .discount-badge {
+    position:absolute;
+    top:8px;
+    left:8px;
+    padding:3px 7px;
+    border-radius:999px;
+    background:#c0392b;
+    color:#fff;
+    font-size:11px;
+    font-weight:800;
+    line-height:1.2;
+    letter-spacing:.02em;
+    box-shadow:0 1px 3px rgba(0,0,0,.18);
+    pointer-events:none;
+  }
+  .card-body { padding:10px 12px 12px; }
+  .product-title {
+    min-height:2.7em;
+    overflow:hidden;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    line-clamp:2;
+    -webkit-line-clamp:2;
+    font-size:13px;
+    line-height:1.35;
+  }
+  .price { margin-top:6px; font-weight:700; font-size:14px; }
+  .old { margin-left:6px; color:#6f6f6f; text-decoration:line-through; font-size:12px; font-weight:400; }
+  .tags { margin-top:4px; min-height:1.4em; color:#676767; font-size:11px; line-height:1.4; }
+  .controls-row {
+    margin-top:10px; display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start;
+  }
+  .filter-bar, .controls-row > .size-preference { flex:1 1 280px; min-width:0; margin:0; }
+  .filter-bar {
+    border:1px solid var(--line); border-radius:12px; background:var(--surface);
+  }
+  .filter-toggle {
+    width:100%; min-height:48px; display:flex; align-items:center;
+    justify-content:space-between; gap:16px; padding:10px 13px;
+    border:0; border-radius:11px; background:transparent; color:var(--ink);
+    text-align:left; cursor:pointer;
+  }
+  .filter-toggle:hover { background:#f7f7f7; }
+  .filter-toggle-title { display:block; font-size:13px; font-weight:750; }
+  .filter-toggle-sub {
+    display:block; margin-top:2px; color:var(--muted); font-size:11px; line-height:1.35;
+  }
+  .filter-count {
+    flex:0 0 auto; min-width:20px; height:20px; padding:0 6px; border-radius:999px;
+    background:var(--accent,#0a5c36); color:#fff; font-size:11px; font-weight:700;
+    text-align:center; line-height:20px;
+  }
+  .filter-panel { padding:4px 13px 12px; border-top:1px solid var(--line); }
+  .filter-group { border-top:1px solid #eef2ef; }
+  .filter-group:first-child { border-top:0; }
+  .filter-group-toggle {
+    width:100%; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:11px 2px; border:0; background:none; cursor:pointer; text-align:left;
+  }
+  .filter-group-title { font-size:12px; font-weight:700; color:#365343; }
+  .filter-group-meta { display:inline-flex; align-items:center; gap:10px; }
+  .filter-group-count {
+    min-width:18px; height:18px; padding:0 5px; border-radius:999px;
+    background:var(--accent,#0a5c36); color:#fff; font-size:11px; font-weight:700;
+    text-align:center; line-height:18px;
+  }
+  .filter-caret {
+    width:7px; height:7px; border-right:2px solid #9aa0a6; border-bottom:2px solid #9aa0a6;
+    transform:rotate(45deg); transition:transform .15s; margin-bottom:2px;
+  }
+  .filter-group-toggle[aria-expanded="true"] .filter-caret { transform:rotate(-135deg); margin-bottom:-2px; }
+  .filter-chips { display:flex; flex-wrap:wrap; gap:7px; padding:0 2px 12px; }
+  .filter-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 11px; border:1px solid var(--line); border-radius:999px;
+    background:#fff; color:var(--ink); font-size:12px; cursor:pointer;
+  }
+  .filter-chip.has-swatch { padding-left:7px; }
+  .filter-chip[aria-pressed="true"] {
+    border-color:var(--accent,#0a5c36); background:rgba(10,92,54,.09); font-weight:700;
+  }
+  .filter-chip[hidden], .filter-chips[hidden] { display:none; }
+  .filter-chip:disabled { opacity:.42; cursor:default; }
+  .filter-chip-count { color:var(--muted); font-size:11px; font-weight:600; }
+  .price-inputs { align-items:center; gap:8px; }
+  .price-field { flex:1 1 90px; min-width:0; }
+  .price-input {
+    width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    font-size:13px; min-height:38px; box-sizing:border-box;
+  }
+  .price-dash { color:var(--muted); flex:0 0 auto; }
+  .color-swatch {
+    width:14px; height:14px; border-radius:50%; border:1px solid rgba(0,0,0,.15); flex:none;
+  }
+  .filter-clear {
+    padding:4px 6px; border:none; background:none; color:#365343;
+    font-size:12px; text-decoration:underline; cursor:pointer;
+  }
+  .size-stock {
+    width:max-content;
+    max-width:100%;
+    margin-top:7px;
+    padding:4px 7px;
+    border-radius:7px;
+    font-size:10px;
+    font-weight:750;
+    line-height:1.25;
+  }
+  .size-stock.is-available {
+    background:var(--accent-soft);
+    color:var(--accent);
+  }
+  .size-stock.is-unavailable {
+    background:#fff4e5;
+    color:var(--warning);
+  }
+  .size-stock.is-unknown {
+    background:#f1f1f1;
+    color:var(--muted);
+  }
+  .outfit-trigger {
+    min-height:44px;
+    margin:0 10px 10px;
+    padding:9px 12px;
+    border:1px solid var(--accent-line);
+    border-radius:9px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:13px;
+    font-weight:700;
+  }
+  .outfit-trigger:hover { background:#e4f1e8; }
+  .outfit-trigger:disabled { cursor:wait; opacity:.65; }
+  .save-outfit-button {
+    min-height:44px;
+    margin:0 10px 10px;
+    padding:9px 12px;
+    border:1px solid var(--accent);
+    border-radius:9px;
+    background:var(--accent);
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+  }
+  .save-outfit-button:hover { background:#084a2c; }
+  .save-outfit-button[aria-pressed="true"] {
+    border-color:var(--accent-line);
+    background:var(--accent-soft);
+    color:var(--accent);
+  }
+  .outfit-edit-actions {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+    margin:0 10px 8px;
+    padding-top:10px;
+    border-top:1px solid #e7eee9;
+  }
+  .outfit-edit-label {
+    grid-column:1 / -1;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:750;
+  }
+  .outfit-edit-button {
+    min-height:38px;
+    padding:7px 8px;
+    border:1px solid var(--accent-line);
+    border-radius:8px;
+    background:#fff;
+    color:var(--accent);
+    font-size:11px;
+    font-weight:700;
+    line-height:1.25;
+  }
+  .outfit-edit-button[data-outfit-preference="alternative"] {
+    grid-column:1 / -1;
+  }
+  .outfit-edit-button:hover:not(:disabled) { background:var(--accent-soft); }
+  .outfit-edit-button:disabled { cursor:wait; opacity:.58; }
+  .reason {
+    margin:0 12px 13px;
+    padding-top:10px;
+    border-top:1px solid #e7eee9;
+    color:#365343;
+    font-size:12px;
+    line-height:1.45;
+  }
+  .sr-only {
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+  .recent-clear {
+    flex:0 0 auto;
+    min-height:44px;
+    padding:9px 14px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#fff;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:700;
+  }
+  .recent-clear:hover:not(:disabled) {
+    border-color:var(--accent-line);
+    color:var(--accent);
+  }
+  .recent-clear:disabled {
+    cursor:not-allowed;
+    opacity:.5;
+  }
+  .personalized-meta {
+    max-width:1100px;
+    margin:10px auto 0;
+    padding:0 20px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+  }
+  .personalized-summary { color:#365343; font-size:13px; font-weight:700; }
+  .personalized-privacy { margin-top:3px; }
+  .personalized-empty-title { color:var(--ink); font-size:15px; font-weight:750; }
+  .personalized-empty-copy { margin-top:5px; }
+  .personalized-empty-actions {
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:14px;
+  }
+  .personalized-empty-actions button {
+    min-height:44px;
+    padding:9px 13px;
+    border:1px solid var(--accent-line);
+    border-radius:9px;
+    background:#fff;
+    color:var(--accent);
+    font-size:12px;
+    font-weight:750;
+  }
+  .personalized-empty-actions button:first-child {
+    border-color:var(--accent);
+    background:var(--accent);
+    color:#fff;
+  }
+  .undo-toast {
+    position:fixed;
+    left:50%;
+    bottom:max(18px,env(safe-area-inset-bottom));
+    z-index:60;
+    width:max-content;
+    max-width:calc(100vw - 24px);
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:12px 14px 12px 16px;
+    border-radius:12px;
+    background:var(--ink);
+    color:#fff;
+    box-shadow:0 12px 32px rgba(0,0,0,.24);
+    opacity:0;
+    pointer-events:none;
+    transform:translate(-50%,calc(100% + 30px));
+    transition:
+      transform .32s cubic-bezier(.22,1,.36,1),
+      opacity .22s ease;
+    will-change:transform,opacity;
+    font-size:13px;
+  }
+  .undo-toast.is-visible {
+    opacity:1;
+    pointer-events:auto;
+    transform:translate(-50%,0);
+  }
+  .undo-toast.is-hiding {
+    opacity:0;
+    pointer-events:none;
+    transform:translate(-50%,calc(100% + 30px));
+  }
+  .undo-toast button {
+    flex:0 0 auto;
+    min-height:36px;
+    padding:7px 12px;
+    border:1px solid rgba(255,255,255,.5);
+    border-radius:8px;
+    background:#fff;
+    color:var(--accent);
+    font-weight:800;
+  }
+  #grid.saved-outfits-grid {
+    grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
+  }
+  .saved-outfit {
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--accent-line);
+    border-radius:14px;
+    background:var(--surface);
+  }
+  .saved-outfit-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:13px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .saved-outfit-title { font-size:14px; font-weight:750; }
+  .saved-outfit-products {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    padding:12px;
+  }
+  .saved-outfit-item { min-width:0; }
+  .saved-outfit-label {
+    display:block;
+    margin-bottom:7px;
+    color:var(--accent);
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+  }
+  .saved-outfit-item .card { height:calc(100% - 19px); }
+  .saved-outfit-reason {
+    margin:0 14px;
+    padding:12px 0;
+    border-top:1px solid var(--line);
+    color:#365343;
+    font-size:12px;
+    line-height:1.5;
+  }
+  .saved-outfit-remove {
+    min-height:38px;
+    margin:0 14px 14px;
+    padding:8px 12px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:#fff;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+  }
+  .saved-outfit-remove:hover { border-color:var(--accent-line); color:var(--accent); }
+  @media (max-width:1099px) {
+    .outfit { margin-left:20px; margin-right:20px; }
+  }
+  @media (max-width:520px) {
+    header { padding-top:22px; }
+    form { flex-direction:column; }
+    .search-button { width:100%; }
+    .size-preference-fields { grid-template-columns:1fr; }
+    .size-field-group { grid-column:auto; }
+    .size-preference-toggle { align-items:flex-start; }
+    .product-view-controls { padding:0 12px; flex-wrap:wrap; }
+    .product-tabs { width:100%; }
+    .personalized-meta { padding:0 12px; }
+    #grid,.outfit-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    #grid { padding:0 12px; }
+    .outfit { margin:14px 12px 4px; padding:15px; }
+    .outfit-head { gap:10px; }
+    .outfit h2 { font-size:18px; }
+    .outfit-close { min-width:64px; }
+    .outfit-source { grid-template-columns:76px minmax(0,1fr); gap:11px; }
+    .source-media { width:76px; }
+    .card-body { padding:9px 10px 11px; }
+    .outfit-trigger { margin:0 8px 8px; padding-left:6px; padding-right:6px; }
+    .save-outfit-button { margin:0 8px 8px; padding-left:6px; padding-right:6px; }
+    .outfit-edit-actions { grid-template-columns:1fr; margin-left:8px; margin-right:8px; }
+    .outfit-edit-button { min-height:44px; }
+    .reason { margin-left:10px; margin-right:10px; }
+    #grid.saved-outfits-grid { grid-template-columns:1fr; }
+    .undo-toast { gap:12px; padding-left:13px; }
+  }
+  @media (max-width:360px) {
+    .outfit-grid { grid-template-columns:1fr; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    * { scroll-behavior:auto !important; }
+    .undo-toast { transition:none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="title-row">
+    <h1>DeFacto Semantic Search</h1>
+    <span class="badge">Detaylı arama</span>
+  </div>
+  <p class="intro">Aradığınız ürünü ayrıntılarıyla bulun ve uygun kıyafetlerle tek dokunuşla tamamlayıcı kombinleri görün.</p>
+  <form id="f" aria-label="Ürün arama formu">
+    <label class="sr-only" for="q">Ürün ara</label>
+    <input id="q" name="q" type="search" required maxlength="200"
+           autocomplete="off"
+           placeholder="ör. puantiyeli kırmızı elbise · 500 tl altı keten gömlek · oversize siyah sweatshirt">
+    <button id="search-button" class="search-button" type="submit">Ara</button>
+  </form>
+  <div class="controls-row">
+  <div id="filter-bar" class="filter-bar">
+    <button id="filter-toggle" class="filter-toggle" type="button"
+            aria-expanded="false" aria-controls="filter-panel">
+      <span class="filter-toggle-text">
+        <span class="filter-toggle-title">Filtrele</span>
+        <span class="filter-toggle-sub">Cinsiyet · kategori · renk · fiyat · desen</span>
+      </span>
+      <span id="filter-count" class="filter-count" hidden>0</span>
+    </button>
+    <section id="filter-panel" class="filter-panel" hidden aria-label="Filtreler">
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="audience-filter">
+          <span class="filter-group-title">Cinsiyet</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="audience" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="audience-filter" class="filter-chips" role="group"
+             aria-label="Kime göre filtrele" hidden></div>
+      </div>
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="category-filter">
+          <span class="filter-group-title">Kategori</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="category" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="category-filter" class="filter-chips" role="group"
+             aria-label="Kategoriye göre filtrele" hidden></div>
+      </div>
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="color-filter">
+          <span class="filter-group-title">Renkler</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="color" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="color-filter" class="filter-chips" role="group"
+             aria-label="Renge göre filtrele" hidden></div>
+      </div>
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="price-filter">
+          <span class="filter-group-title">Fiyat</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="price" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="price-filter" class="filter-chips price-inputs" role="group"
+             aria-label="Fiyat aralığı" hidden>
+          <label class="price-field"><span class="sr-only">En az fiyat</span>
+            <input id="price-min-input" class="price-input" type="number" min="0"
+                   step="1" inputmode="numeric" placeholder="En az ₺"></label>
+          <span class="price-dash" aria-hidden="true">–</span>
+          <label class="price-field"><span class="sr-only">En çok fiyat</span>
+            <input id="price-max-input" class="price-input" type="number" min="0"
+                   step="1" inputmode="numeric" placeholder="En çok ₺"></label>
+        </div>
+      </div>
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="pattern-filter">
+          <span class="filter-group-title">Desen</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="pattern" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="pattern-filter" class="filter-chips" role="group"
+             aria-label="Desene göre filtrele" hidden></div>
+      </div>
+      <div class="filter-group">
+        <button class="filter-group-toggle" type="button" aria-expanded="false"
+                aria-controls="discount-filter">
+          <span class="filter-group-title">Fırsat</span>
+          <span class="filter-group-meta"><span class="filter-group-count"
+                data-count="discount" hidden>0</span><span class="filter-caret"
+                aria-hidden="true"></span></span>
+        </button>
+        <div id="discount-filter" class="filter-chips" role="group"
+             aria-label="Sadece indirimli ürünler" hidden></div>
+      </div>
+      <button id="clear-filters" class="filter-clear" type="button" hidden>
+        Tüm filtreleri temizle
+      </button>
+    </section>
+  </div>
+  <section class="size-preference" aria-labelledby="size-preference-title">
+    <button id="size-preference-toggle" class="size-preference-toggle" type="button"
+            aria-expanded="false" aria-controls="size-preference-panel">
+      <span>
+        <span id="size-preference-title" class="size-preference-title">Bedenimi hatırla</span>
+        <span id="size-preference-summary" class="size-preference-summary">
+          Henüz beden kaydetmedin
+        </span>
+      </span>
+      <span id="size-preference-toggle-label" class="size-preference-toggle-label"
+            aria-hidden="true">Beden seç</span>
+    </button>
+    <div id="size-preference-panel" class="size-preference-panel" hidden>
+      <p class="size-preference-help">
+        Bedenlerin yalnız bu cihazda saklanır. Ürünler gizlenmez; kartlarda stok durumunu
+        görürsün ve kombin önerileri hatırladığın bedenlere göre hazırlanır.
+      </p>
+      <div class="size-preference-fields">
+        <label class="size-field" for="size-alpha">
+          <span>Harfli giyim bedeni</span>
+          <select id="size-alpha" data-size-preference="alpha">
+            <option value="">Seçilmedi</option>
+            <option>XXS</option><option>XS</option><option>S</option><option>M</option>
+            <option>L</option><option>XL</option><option>XXL</option>
+            <option>3XL</option><option>4XL</option><option>5XL</option><option>6XL</option>
+          </select>
+        </label>
+        <label class="size-field" for="size-numeric">
+          <span>Sayısal giyim bedeni</span>
+          <select id="size-numeric" data-size-preference="numeric">
+            <option value="">Seçilmedi</option>
+            <option>32</option><option>33</option><option>34</option><option>35</option>
+            <option>36</option><option>37</option><option>38</option><option>39</option>
+            <option>40</option><option>41</option><option>42</option><option>43</option>
+            <option>44</option><option>45</option><option>46</option><option>48</option>
+            <option>50</option><option>52</option><option>54</option><option>56</option><option>58</option>
+          </select>
+        </label>
+        <label class="size-field" for="size-shoe">
+          <span>Ayakkabı numarası</span>
+          <select id="size-shoe" data-size-preference="shoe">
+            <option value="">Seçilmedi</option>
+            <option>23</option><option>24</option><option>25</option><option>26</option>
+            <option>27</option><option>28</option><option>29</option><option>30</option>
+            <option>31</option><option>32</option><option>33</option><option>34</option>
+            <option>35</option><option>36</option><option>37</option><option>38</option>
+            <option>39</option><option>40</option><option>41</option><option>42</option>
+            <option>43</option><option>44</option><option>45</option><option>46</option>
+          </select>
+        </label>
+        <fieldset class="size-field size-field-group">
+          <legend>Jean bedeni</legend>
+          <div class="jean-size-fields">
+            <label>
+              <span class="sr-only">Jean bel bedeni</span>
+              <select id="size-jean-waist" data-size-preference="jeanWaist"
+                      aria-label="Jean bel bedeni">
+                <option value="">Bel seç</option>
+                <option>27</option><option>28</option><option>29</option><option>30</option>
+                <option>31</option><option>32</option><option>33</option><option>34</option>
+                <option>35</option><option>36</option><option>38</option><option>40</option>
+                <option>42</option><option>44</option>
+              </select>
+            </label>
+            <label>
+              <span class="sr-only">Jean boy ölçüsü</span>
+              <select id="size-jean-length" data-size-preference="jeanLength"
+                      aria-label="Jean boy ölçüsü">
+                <option value="">Boy seç</option>
+                <option>28</option><option>30</option><option>32</option><option>34</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
+        <label class="size-field" for="size-child">
+          <span>Çocuk / bebek bedeni</span>
+          <select id="size-child" data-size-preference="child">
+            <option value="">Seçilmedi</option>
+            <optgroup label="Bebek">
+              <option value="month:0">0 Ay</option>
+              <option value="month:1-3">1–3 Ay</option>
+              <option value="month:3-6">3–6 Ay</option>
+              <option value="month:6-9">6–9 Ay</option>
+              <option value="month:9-12">9–12 Ay</option>
+              <option value="month:12-18">12–18 Ay</option>
+              <option value="month:18-24">18–24 Ay</option>
+              <option value="month:24-36">24–36 Ay</option>
+            </optgroup>
+            <optgroup label="Çocuk">
+              <option value="age:1-2">1–2 Yaş</option>
+              <option value="age:2-3">2–3 Yaş</option>
+              <option value="age:3-4">3–4 Yaş</option>
+              <option value="age:4-5">4–5 Yaş</option>
+              <option value="age:5-6">5–6 Yaş</option>
+              <option value="age:6-7">6–7 Yaş</option>
+              <option value="age:7-8">7–8 Yaş</option>
+              <option value="age:8-9">8–9 Yaş</option>
+              <option value="age:9-10">9–10 Yaş</option>
+              <option value="age:10-11">10–11 Yaş</option>
+              <option value="age:11-12">11–12 Yaş</option>
+              <option value="age:12-13">12–13 Yaş</option>
+              <option value="age:13-14">13–14 Yaş</option>
+            </optgroup>
+          </select>
+        </label>
+      </div>
+      <div class="size-preference-actions">
+        <button id="clear-size-preferences" class="size-preference-clear" type="button">
+          Bedenlerimi unut
+        </button>
+        <p id="size-preference-status" class="size-preference-status"
+           role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+  </div>
+</header>
+<main id="content">
+  <div id="meta" role="status" aria-live="polite"></div>
+
+  <div class="product-view-controls">
+    <div id="product-tabs" class="product-tabs" role="tablist" aria-label="Ürün listeleri">
+      <button id="search-results-tab" class="product-tab" type="button" role="tab"
+              data-view="search" aria-selected="true" aria-controls="grid" tabindex="0">
+        Arama sonuçları
+      </button>
+      <button id="personalized-products-tab" class="product-tab" type="button" role="tab"
+              data-view="personalized" aria-selected="false" aria-controls="grid" tabindex="-1">
+        Sana özel
+      </button>
+      <button id="recent-products-tab" class="product-tab" type="button" role="tab"
+              data-view="recent" aria-selected="false" aria-controls="grid" tabindex="-1">
+        Son gezilen ürünler
+        <span id="recent-products-count" class="product-tab-count" aria-hidden="true" hidden>0</span>
+      </button>
+      <button id="saved-outfits-tab" class="product-tab" type="button" role="tab"
+              data-view="saved" aria-selected="false" aria-controls="grid" tabindex="-1">
+        Kaydedilen kombinler
+        <span id="saved-outfits-count" class="product-tab-count" aria-hidden="true" hidden>0</span>
+      </button>
+    </div>
+    <button id="refresh-personalized-products" class="recent-clear" type="button" hidden>
+      Önerileri yenile
+    </button>
+    <button id="clear-recent-products" class="recent-clear" type="button" hidden>
+      Son gezilenleri temizle
+    </button>
+    <button id="clear-saved-outfits" class="recent-clear" type="button" hidden>
+      Kaydedilenleri temizle
+    </button>
+  </div>
+  <section id="personalized-meta" class="personalized-meta" hidden>
+    <p id="personalized-summary" class="personalized-summary"
+       role="status" aria-live="polite"></p>
+    <p class="personalized-privacy">
+      Öneriler bu cihazdaki son gezilenlere, kaydedilen kombinlere ve beden tercihlerinin stok durumuna göre hazırlanır; sunucuda kalıcı profil tutulmaz.
+    </p>
+  </section>
+  <p id="product-view-status" class="sr-only" role="status" aria-live="polite"></p>
+  <div id="recent-clear-undo" class="undo-toast" role="group"
+       aria-labelledby="recent-clear-undo-message" hidden>
+    <span id="recent-clear-undo-message">Son gezilen ürünler temizlendi.</span>
+    <button id="undo-clear-recent" type="button">Geri al</button>
+  </div>
+
+  <section id="outfit" class="outfit" role="dialog" aria-modal="false"
+           aria-labelledby="outfit-title" aria-describedby="outfit-summary" hidden>
+    <div class="outfit-head">
+      <div>
+        <p class="eyebrow">Kombin önerisi</p>
+        <h2 id="outfit-title">Bu parçayla kombinlenebilir</h2>
+        <p id="outfit-summary" class="outfit-summary"></p>
+      </div>
+      <button id="outfit-close" class="outfit-close" type="button">Kapat</button>
+    </div>
+    <div id="outfit-source" class="outfit-source"></div>
+    <div id="outfit-status" class="outfit-status" role="status" aria-live="polite"></div>
+    <div id="outfit-grid" class="outfit-grid"></div>
+  </section>
+
+  <section id="grid" role="tabpanel" aria-labelledby="search-results-tab"></section>
+</main>
+
+<script>
+const form = document.getElementById('f');
+const queryInput = document.getElementById('q');
+const meta = document.getElementById('meta');
+const grid = document.getElementById('grid');
+const productTabs = document.getElementById('product-tabs');
+const searchResultsTab = document.getElementById('search-results-tab');
+const personalizedProductsTab = document.getElementById('personalized-products-tab');
+const personalizedMeta = document.getElementById('personalized-meta');
+const personalizedSummary = document.getElementById('personalized-summary');
+const refreshPersonalizedProductsButton = document.getElementById('refresh-personalized-products');
+const recentProductsTab = document.getElementById('recent-products-tab');
+const recentProductsCount = document.getElementById('recent-products-count');
+const clearRecentProductsButton = document.getElementById('clear-recent-products');
+const savedOutfitsTab = document.getElementById('saved-outfits-tab');
+const savedOutfitsCount = document.getElementById('saved-outfits-count');
+const clearSavedOutfitsButton = document.getElementById('clear-saved-outfits');
+const productViewStatus = document.getElementById('product-view-status');
+const recentClearUndo = document.getElementById('recent-clear-undo');
+const recentClearUndoMessage = document.getElementById('recent-clear-undo-message');
+const undoClearRecentButton = document.getElementById('undo-clear-recent');
+const outfitSection = document.getElementById('outfit');
+const outfitTitle = document.getElementById('outfit-title');
+const outfitSummary = document.getElementById('outfit-summary');
+const outfitSource = document.getElementById('outfit-source');
+const outfitStatus = document.getElementById('outfit-status');
+const outfitGrid = document.getElementById('outfit-grid');
+const outfitClose = document.getElementById('outfit-close');
+const sizePreferenceToggle = document.getElementById('size-preference-toggle');
+const sizePreferenceToggleLabel = document.getElementById('size-preference-toggle-label');
+const sizePreferenceSummary = document.getElementById('size-preference-summary');
+const sizePreferencePanel = document.getElementById('size-preference-panel');
+const sizePreferenceStatus = document.getElementById('size-preference-status');
+const clearSizePreferencesButton = document.getElementById('clear-size-preferences');
+const sizePreferenceSelects = Array.from(
+  document.querySelectorAll('select[data-size-preference]')
+);
+
+const COMBINABLE_CATEGORIES = new Set([
+  'Tişört','Polo Tişört','Tesettür Tişört','Gömlek','Bluz','Atlet','Tunik',
+  'Kazak','Sweatshirt','Tesettür Sweatshirt','Süveter','Pantolon',
+  'Jean Pantolon','Chino Pantolon','Tesettür Pantolon',
+  'Eşofman Altı','Jogger','Şort','Jean Şort','Bermuda','Etek','Tesettür Etek',
+  'Jean Etek','Tayt','Kapri','Elbise','Tesettür Elbise','Tulum','Ceket',
+  'Blazer Ceket','Jean Ceket','Deri Ceket','Hırka','Hırka / Bolero',
+  'Tesettur Hırka','Yelek','Mont','Kaban / Parka','Parka','Trençkot','Yağmurluk'
+]);
+const FOOTWEAR_CATEGORIES = new Set([
+  'Ayakkabı','Günlük Ayakkabı','Topuklu Ayakkabı','Sandalet','Terlik','Ev Terliği',
+  'Sneaker','Bot','Çizme','Babet','Loafer','Çorap'
+]);
+const SIZE_FILTER_EXEMPT_CATEGORIES = new Set([
+  'Kemer','Çanta','Takı','Yüzük'
+]);
+
+const FILTER_LABELS = {
+  category:'kategori', color:'renk', gender:'cinsiyet', age_group:'yaş grubu',
+  patterns:'desen', fabrics:'kumaş', fits:'kalıp', necklines:'yaka',
+  sleeves:'kol', lengths:'boy', price_min:'en düşük fiyat', price_max:'en yüksek fiyat'
+};
+
+const priceFormatter = new Intl.NumberFormat('tr-TR', {
+  style:'currency', currency:'TRY', maximumFractionDigits:2
+});
+const RECENT_STORAGE_KEY = 'defacto-recent-products-v1';
+const RECENT_LIMIT = 10;
+const RECENT_UNDO_TIMEOUT_MS = 10000;
+const RECENT_UNDO_ANIMATION_MS = 320;
+const SAVED_OUTFITS_STORAGE_KEY = 'defacto-saved-outfits-v1';
+const SAVED_OUTFITS_LIMIT = 20;
+const PERSONALIZED_LIMIT = 12;
+const PERSONALIZED_EXCLUDE_LIMIT = 100;
+const SIZE_PREFERENCES_STORAGE_KEY = 'defacto-size-preferences-v1';
+const SIZE_PREFERENCES_VERSION = 1;
+const SIZE_PREFERENCE_KEYS = [
+  'alpha','numeric','shoe','jeanWaist','jeanLength','child'
+];
+const SIZE_PREFERENCE_ALLOWED = new Map(
+  sizePreferenceSelects.map(select => [
+    select.dataset.sizePreference,
+    new Set(Array.from(select.options, option => option.value).filter(Boolean)),
+  ])
+);
+const OUTFIT_EDIT_EXCLUDE_LIMIT = 100;
+const OUTFIT_EDIT_OPTIONS = {
+  alternative:{
+    label:'Öneriyi değiştir',
+    loading:'Yeni bir tamamlayıcı parça aranıyor…',
+    success:'Tamamlayıcı parça yeni bir alternatifle değiştirildi.',
+    empty:'Bu kombin için gösterebileceğimiz başka bir parça kalmadı.',
+  },
+  cheaper:{
+    label:'Daha uygun fiyatlı',
+    loading:'Daha uygun fiyatlı bir tamamlayıcı aranıyor…',
+    success:'Tamamlayıcı parça daha uygun fiyatlı bir alternatifle değiştirildi.',
+    empty:'Daha uygun fiyatlı başka bir uyumlu parça bulunamadı.',
+  },
+  different_color:{
+    label:'Başka renk',
+    loading:'Farklı renkli bir tamamlayıcı aranıyor…',
+    success:'Tamamlayıcı parça farklı renkli bir alternatifle değiştirildi.',
+    empty:'Aynı kategoride farklı renkli uygun bir alternatif bulunamadı.',
+  },
+};
+const productsById = new Map();
+const outfitCache = new Map();
+const personalizedCache = new Map();
+let searchProducts = [];
+let personalizedProducts = [];
+let personalizedSummaryText = '';
+let personalizedErrorMessage = '';
+let personalizedLoaded = false;
+let personalizedLoading = false;
+let personalizedError = false;
+let personalizedStale = true;
+let personalizedProfileFingerprint = '';
+let personalizedPendingFingerprint = '';
+let recentProducts = loadRecentProducts();
+let recentlyClearedProducts = [];
+let savedOutfits = loadSavedOutfits();
+let sizePreferences = loadSizePreferences();
+let recentlyClearedSavedOutfits = [];
+let recentlyRemovedSavedOutfit = null;
+let clearUndoType = null;
+let activeProductView = 'search';
+let searchController = null;
+let selectedColors = new Set();
+let selectedAudiences = new Set();
+let selectedCategories = new Set();
+let selectedPatterns = new Set();
+let priceMin = null;
+let priceMax = null;
+let discountOnly = false;
+let lastSearchQuery = '';
+let searchFacets = {};
+let personalizedController = null;
+let personalizedRequestId = 0;
+let outfitController = null;
+let outfitEditController = null;
+let outfitEditRequestId = 0;
+let activeOutfitData = null;
+let outfitProductHistoryByIndex = new Map();
+let searchRequestId = 0;
+let activeOutfitButton = null;
+let outfitPlacementFrame = null;
+let recentUndoTimer = null;
+let recentUndoHideTimer = null;
+
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = text;
+  return node;
+}
+
+function safeUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value), window.location.origin);
+    const host = url.hostname.toLowerCase();
+    const trustedHost = host === 'defacto.com.tr' || host.endsWith('.defacto.com.tr');
+    return ['http:','https:'].includes(url.protocol) && trustedHost ? url.href : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function formatPrice(value) {
+  if (value === null || value === undefined || value === '') return 'Fiyat bilgisi yok';
+  const number = Number(value);
+  return Number.isFinite(number) ? priceFormatter.format(number) : 'Fiyat bilgisi yok';
+}
+
+function emptySizePreferences() {
+  return Object.fromEntries(SIZE_PREFERENCE_KEYS.map(key => [key, '']));
+}
+
+function sanitizeSizePreferences(value) {
+  const clean = emptySizePreferences();
+  const source = value && typeof value === 'object' ? value : {};
+  for (const key of SIZE_PREFERENCE_KEYS) {
+    const candidate = String(source[key] ?? '').trim();
+    if (SIZE_PREFERENCE_ALLOWED.get(key)?.has(candidate)) clean[key] = candidate;
+  }
+  return clean;
+}
+
+function loadSizePreferences() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SIZE_PREFERENCES_STORAGE_KEY) || 'null');
+    if (!stored || stored.version !== SIZE_PREFERENCES_VERSION) {
+      return emptySizePreferences();
+    }
+    const preferences = sanitizeSizePreferences(stored.preferences);
+    if (!preferences.jeanWaist || !preferences.jeanLength) {
+      preferences.jeanWaist = '';
+      preferences.jeanLength = '';
+    }
+    return preferences;
+  } catch (_) {
+    return emptySizePreferences();
+  }
+}
+
+function hasSizePreferences(preferences = sizePreferences) {
+  return Boolean(
+    preferences?.alpha
+    || preferences?.numeric
+    || preferences?.shoe
+    || preferences?.child
+    || (preferences?.jeanWaist && preferences?.jeanLength)
+  );
+}
+
+function hasSizePreferenceDraft(preferences = sizePreferences) {
+  return SIZE_PREFERENCE_KEYS.some(key => Boolean(preferences?.[key]));
+}
+
+function saveSizePreferences() {
+  try {
+    if (!hasSizePreferences()) {
+      localStorage.removeItem(SIZE_PREFERENCES_STORAGE_KEY);
+      return;
+    }
+    const storedPreferences = { ...sizePreferences };
+    if (!storedPreferences.jeanWaist || !storedPreferences.jeanLength) {
+      storedPreferences.jeanWaist = '';
+      storedPreferences.jeanLength = '';
+    }
+    localStorage.setItem(SIZE_PREFERENCES_STORAGE_KEY, JSON.stringify({
+      version:SIZE_PREFERENCES_VERSION,
+      preferences:storedPreferences,
+    }));
+  } catch (_) {
+    // Depolama kapalıysa tercihler bu tarayıcı oturumunda çalışmaya devam eder.
+  }
+}
+
+function sizePreferenceLabel(key, value) {
+  const select = sizePreferenceSelects.find(
+    item => item.dataset.sizePreference === key
+  );
+  const option = Array.from(select?.options || []).find(item => item.value === value);
+  return option?.textContent?.trim() || value;
+}
+
+function sizePreferenceSummaryParts(preferences = sizePreferences) {
+  const parts = [];
+  if (preferences.alpha) parts.push(preferences.alpha);
+  if (preferences.numeric) parts.push(`Giyim ${preferences.numeric}`);
+  if (preferences.shoe) parts.push(`Ayakkabı ${preferences.shoe}`);
+  if (preferences.jeanWaist && preferences.jeanLength) {
+    parts.push(`Jean W${preferences.jeanWaist}/L${preferences.jeanLength}`);
+  }
+  if (preferences.child) {
+    parts.push(sizePreferenceLabel('child', preferences.child));
+  }
+  return parts;
+}
+
+function updateSizePreferenceUi() {
+  for (const select of sizePreferenceSelects) {
+    select.value = sizePreferences[select.dataset.sizePreference] || '';
+  }
+  const parts = sizePreferenceSummaryParts();
+  sizePreferenceSummary.textContent = parts.length
+    ? `Hatırlanan: ${parts.join(' · ')}`
+    : 'Henüz beden kaydetmedin';
+  sizePreferenceToggleLabel.textContent = parts.length ? 'Düzenle' : 'Beden seç';
+  clearSizePreferencesButton.disabled = !hasSizePreferenceDraft();
+}
+
+function setSizePreferencePanel(expanded) {
+  sizePreferencePanel.hidden = !expanded;
+  sizePreferenceToggle.setAttribute('aria-expanded', String(expanded));
+  if (expanded) sizePreferenceSelects[0]?.focus({ preventScroll:true });
+}
+
+function refreshProductsForSizePreference() {
+  outfitCache.clear();
+  if (!outfitSection.hidden) hideOutfit(false);
+  renderActiveProductView();
+}
+
+function updateSizePreferencesFromControls() {
+  const next = emptySizePreferences();
+  for (const select of sizePreferenceSelects) {
+    next[select.dataset.sizePreference] = select.value;
+  }
+  sizePreferences = sanitizeSizePreferences(next);
+  saveSizePreferences();
+  updateSizePreferenceUi();
+  markPersonalizedStale();
+  refreshProductsForSizePreference();
+  if ((sizePreferences.jeanWaist && !sizePreferences.jeanLength)
+      || (!sizePreferences.jeanWaist && sizePreferences.jeanLength)) {
+    sizePreferenceStatus.textContent = 'Jean bedeni için bel ve boyu birlikte seçmelisin.';
+  } else {
+    sizePreferenceStatus.textContent = hasSizePreferences()
+      ? 'Bedenlerin bu cihaz için kaydedildi.'
+      : 'Beden tercihin kaldırıldı.';
+  }
+}
+
+function clearSizePreferences() {
+  sizePreferences = emptySizePreferences();
+  try {
+    localStorage.removeItem(SIZE_PREFERENCES_STORAGE_KEY);
+  } catch (_) {
+    // Depolama kapalı olsa da bu oturumdaki tercihler temizlenir.
+  }
+  updateSizePreferenceUi();
+  markPersonalizedStale();
+  refreshProductsForSizePreference();
+  sizePreferenceStatus.textContent = 'Hatırlanan bedenlerin temizlendi.';
+}
+
+function foldSize(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/ı/g, 'i')
+    .trim();
+}
+
+function normalizeChildSize(value) {
+  const folded = foldSize(value);
+  if (/^(?:age|month):/.test(folded)) return folded;
+  let match = folded.match(/(\d{1,2})\s*[\/-]\s*(\d{1,2})\s*yas/);
+  if (match) return `age:${match[1]}-${match[2]}`;
+  match = folded.match(/(\d{1,2})\s*[\/-]\s*(\d{1,2})\s*ay/);
+  if (match) return `month:${match[1]}-${match[2]}`;
+  match = folded.match(/^(\d{1,2})\s*ay/);
+  return match ? `month:${match[1]}` : folded.replace(/\s+/g, '');
+}
+
+function childSizeMatches(value, preference) {
+  const available = normalizeChildSize(value).match(
+    /^(age|month):(\d{1,2})(?:-(\d{1,2}))?$/
+  );
+  const wanted = normalizeChildSize(preference).match(
+    /^(age|month):(\d{1,2})(?:-(\d{1,2}))?$/
+  );
+  if (!available || !wanted || available[1] !== wanted[1]) return false;
+  const availableStart = Number(available[2]);
+  const availableEnd = Number(available[3] || available[2]);
+  const wantedStart = Number(wanted[2]);
+  const wantedEnd = Number(wanted[3] || wanted[2]);
+  return availableStart <= wantedStart && availableEnd >= wantedEnd;
+}
+
+function isChildProduct(product) {
+  return ['Çocuk','Bebek'].includes(product?.age_group);
+}
+
+function isUniversalSize(value) {
+  const normalized = foldSize(value).replace(/\s+/g, '');
+  return normalized === 'std' || normalized === 'onesize';
+}
+
+function parseJeanSize(value) {
+  const match = foldSize(value).match(/beden\s*(\d{2})\s*-\s*boy\s*(\d{2})/);
+  return match ? { waist:match[1], length:match[2] } : null;
+}
+
+function alphaTokens(value) {
+  const normalized = foldSize(value).replace(/\s+/g, '').toUpperCase();
+  const parts = normalized.split('/');
+  const valid = /^(?:XXS|XS|S|M|L|XL|XXL|[3-6]XL)$/;
+  return parts.length <= 2 && parts.every(part => valid.test(part)) ? parts : [];
+}
+
+function numericSizeMatches(value, preferred, { slashIsRange = false } = {}) {
+  const normalized = foldSize(value).replace(/\s+/g, '');
+  if (normalized === preferred) return true;
+  const pair = normalized.match(/^(\d{2})([\/-])(\d{2})$/);
+  if (!pair) return false;
+  const wanted = Number(preferred);
+  const start = Number(pair[1]);
+  const end = Number(pair[3]);
+  if ((pair[2] === '-' || slashIsRange) && start < end && end - start <= 10) {
+    return wanted >= start && wanted <= end;
+  }
+  return wanted === start || wanted === end;
+}
+
+function rememberedSizeStatus(product) {
+  if (!hasSizePreferences()) return null;
+  if (SIZE_FILTER_EXEMPT_CATEGORIES.has(product?.category)) return null;
+  const sizes = Array.isArray(product?.sizes)
+    ? product.sizes.map(value => String(value).trim()).filter(Boolean)
+    : [];
+  if (!sizes.length) {
+    return { className:'is-unknown', text:'Beden bilgisi yok' };
+  }
+  if (sizes.some(isUniversalSize)) {
+    return { className:'is-available', text:'Standart beden' };
+  }
+
+  const childSizes = sizes.filter(size =>
+    /^(?:age|month):/.test(normalizeChildSize(size))
+  );
+  if (isChildProduct(product) && childSizes.length) {
+    if (!sizePreferences.child) return null;
+    const matches = childSizes.some(
+      size => childSizeMatches(size, sizePreferences.child)
+    );
+    const label = sizePreferenceLabel('child', sizePreferences.child);
+    return {
+      className:matches ? 'is-available' : 'is-unavailable',
+      text:matches ? `Bedenin ${label} stokta` : `${label} şu an stokta yok`,
+    };
+  }
+
+  if (FOOTWEAR_CATEGORIES.has(product?.category)) {
+    if (!sizePreferences.shoe) return null;
+    const footwearSizes = sizes.filter(value => /^\d{2}(?:[\/-]\d{2})?$/.test(
+      foldSize(value).replace(/\s+/g, '')
+    ));
+    if (!footwearSizes.length) return null;
+    const matches = footwearSizes.some(
+      size => numericSizeMatches(size, sizePreferences.shoe, { slashIsRange:true })
+    );
+    return {
+      className:matches ? 'is-available' : 'is-unavailable',
+      text:matches
+        ? `${sizePreferences.shoe} numara stokta`
+        : `${sizePreferences.shoe} numara şu an stokta yok`,
+    };
+  }
+
+  if (isChildProduct(product)) return null;
+
+  const adultStatuses = [];
+  const jeanSizes = sizes.map(parseJeanSize).filter(Boolean);
+  if (jeanSizes.length && sizePreferences.jeanWaist && sizePreferences.jeanLength) {
+    const matches = jeanSizes.some(size =>
+      size.waist === sizePreferences.jeanWaist
+      && size.length === sizePreferences.jeanLength
+    );
+    const label = `W${sizePreferences.jeanWaist}/L${sizePreferences.jeanLength}`;
+    adultStatuses.push({
+      className:matches ? 'is-available' : 'is-unavailable',
+      text:matches ? `Jean bedenin ${label} stokta` : `${label} şu an stokta yok`,
+    });
+  }
+
+  const productAlphaTokens = sizes.flatMap(alphaTokens);
+  if (productAlphaTokens.length && sizePreferences.alpha) {
+    const matches = productAlphaTokens.includes(sizePreferences.alpha);
+    adultStatuses.push({
+      className:matches ? 'is-available' : 'is-unavailable',
+      text:matches
+        ? `Bedenin ${sizePreferences.alpha} stokta`
+        : `${sizePreferences.alpha} şu an stokta yok`,
+    });
+  }
+
+  const numericSizes = sizes.filter(value => /^\d{2}(?:[\/-]\d{2})?$/.test(
+    foldSize(value).replace(/\s+/g, '')
+  ));
+  if (numericSizes.length && sizePreferences.numeric) {
+    const matches = numericSizes.some(
+      size => numericSizeMatches(size, sizePreferences.numeric)
+    );
+    adultStatuses.push({
+      className:matches ? 'is-available' : 'is-unavailable',
+      text:matches
+        ? `Bedenin ${sizePreferences.numeric} stokta`
+        : `${sizePreferences.numeric} şu an stokta yok`,
+    });
+  }
+  return adultStatuses.find(status => status.className === 'is-available')
+    || adultStatuses[0]
+    || null;
+}
+
+function appendRememberedSizeStatus(container, product, { historical = false } = {}) {
+  const status = rememberedSizeStatus(product);
+  if (!status) return;
+  let text = status.text;
+  if (historical) {
+    if (status.className === 'is-unknown') {
+      text = 'Son görüntülendiğinde beden bilgisi yoktu';
+    } else if (status.className === 'is-unavailable') {
+      text = `Son görüntülendiğinde: ${status.text.replace(
+        ' şu an stokta yok', ' stokta değildi'
+      )}`;
+    } else {
+      text = `Son görüntülendiğinde: ${status.text}`;
+    }
+  }
+  container.append(element('div', `size-stock ${status.className}`, text));
+}
+
+function childSizeAliases(preference) {
+  if (!preference) return [];
+  if (preference === 'month:0') return ['0 AY'];
+  const match = preference.match(/^(age|month):(\d{1,2})-(\d{1,2})$/);
+  if (!match) return [];
+  const [, kind, start, end] = match;
+  const centimeters = {
+    'age:1-2':'', 'age:2-3':'98', 'age:3-4':'104', 'age:4-5':'110',
+    'age:5-6':'116', 'age:6-7':'122', 'age:7-8':'128', 'age:8-9':'134',
+    'age:9-10':'140', 'age:10-11':'146', 'age:11-12':'152',
+    'age:12-13':'158', 'age:13-14':'164',
+    'month:1-3':'62', 'month:3-6':'68', 'month:6-9':'74',
+    'month:9-12':'80', 'month:12-18':'86', 'month:18-24':'92',
+    'month:24-36':'98',
+  }[preference];
+  const label = kind === 'age' ? 'Yaş' : 'Ay';
+  const aliases = [`${start}-${end} ${label.toLocaleUpperCase('tr-TR')}`];
+  if (centimeters) {
+    aliases.push(
+      `${start}-${end} ${label} (${centimeters}cm)`,
+      `${start}-${end} ${label} (${centimeters} cm)`,
+      `${start}/${end} ${label} (${centimeters}cm)`,
+      `${start}/${end} ${label} (${centimeters} cm)`
+    );
+  }
+  return aliases;
+}
+
+function alphaSizeAliases(preference) {
+  const aliases = {
+    XS:['XS','XS/S'],
+    S:['S','XS/S','S/M'],
+    M:['M','S/M','M/L'],
+    L:['L','M/L','L/XL'],
+    XL:['XL','L/XL'],
+  };
+  return preference ? (aliases[preference] || [preference]) : [];
+}
+
+function preferredOutfitSizesFor(source) {
+  if (!hasSizePreferences()) return [];
+  if (isChildProduct(source)) return childSizeAliases(sizePreferences.child);
+  const sizes = [
+    ...alphaSizeAliases(sizePreferences.alpha),
+    sizePreferences.numeric,
+  ];
+  if (sizePreferences.jeanWaist && sizePreferences.jeanLength) {
+    sizes.push(`Beden ${sizePreferences.jeanWaist} - Boy ${sizePreferences.jeanLength}`);
+  }
+  return Array.from(new Set(sizes.filter(Boolean))).slice(0, 16);
+}
+
+function appendPreferredOutfitSizes(params, source) {
+  for (const size of preferredOutfitSizesFor(source)) {
+    params.append('preferred_size', size);
+  }
+}
+
+function outfitCacheKey(productId, source) {
+  return JSON.stringify([String(productId), preferredOutfitSizesFor(source)]);
+}
+
+function loadRecentProducts() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RECENT_STORAGE_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    return stored.filter(product => product && product.id).slice(0, RECENT_LIMIT);
+  } catch (_) {
+    return [];
+  }
+}
+
+function recentProductSnapshot(product) {
+  const id = String(product?.id ?? '').trim();
+  if (!id) return null;
+  return {
+    id,
+    title:product?.title || 'Ürün',
+    category:product?.category || null,
+    color:product?.color || null,
+    patterns:Array.isArray(product?.patterns) ? product.patterns.slice(0, 8) : [],
+    price:product?.price ?? null,
+    sale_price:product?.sale_price ?? null,
+    gender:product?.gender || null,
+    age_group:product?.age_group || null,
+    sizes:Array.isArray(product?.sizes) ? product.sizes.slice() : [],
+    image:product?.image || null,
+    link:product?.link || null,
+  };
+}
+
+function savedOutfitId(source, product) {
+  const sourceId = String(source?.id ?? '').trim();
+  const productId = String(product?.id ?? '').trim();
+  if (!sourceId || !productId || sourceId === productId) return null;
+  return JSON.stringify([sourceId, productId].sort());
+}
+
+function savedOutfitSnapshot(source, product) {
+  const id = savedOutfitId(source, product);
+  const sourceSnapshot = recentProductSnapshot(source);
+  const productSnapshot = recentProductSnapshot(product);
+  if (!id || !sourceSnapshot || !productSnapshot) return null;
+  return {
+    id,
+    source:sourceSnapshot,
+    product:productSnapshot,
+    reason:String(product?.reason || '').trim().slice(0, 500),
+  };
+}
+
+function savedOutfitRecordSnapshot(outfit) {
+  const product = outfit?.product && typeof outfit.product === 'object'
+    ? outfit.product
+    : {};
+  return savedOutfitSnapshot(
+    outfit?.source,
+    { ...product, reason:outfit?.reason || product.reason }
+  );
+}
+
+function loadSavedOutfits() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SAVED_OUTFITS_STORAGE_KEY) || '[]');
+    if (!Array.isArray(stored)) return [];
+    const uniqueIds = new Set();
+    const outfits = [];
+    for (const item of stored) {
+      const storedProduct = item?.product && typeof item.product === 'object'
+        ? item.product
+        : {};
+      const snapshot = savedOutfitSnapshot(
+        item?.source,
+        { ...storedProduct, reason:item?.reason || storedProduct.reason }
+      );
+      if (!snapshot || uniqueIds.has(snapshot.id)) continue;
+      uniqueIds.add(snapshot.id);
+      outfits.push(snapshot);
+      if (outfits.length >= SAVED_OUTFITS_LIMIT) break;
+    }
+    return outfits;
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveRecentProducts() {
+  try {
+    localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentProducts));
+  } catch (_) {
+    // Depolama kapalıysa liste bu tarayıcı oturumunda çalışmaya devam eder.
+  }
+}
+
+function saveSavedOutfits() {
+  try {
+    localStorage.setItem(SAVED_OUTFITS_STORAGE_KEY, JSON.stringify(savedOutfits));
+  } catch (_) {
+    // Depolama kapalıysa kayıtlar bu tarayıcı oturumunda çalışmaya devam eder.
+  }
+}
+
+function personalizedProductId(value) {
+  const id = String(value ?? '').trim();
+  return id || null;
+}
+
+function personalizedProfileSnapshot() {
+  const recentIds = [];
+  const seenRecentIds = new Set();
+  for (const product of recentProducts.slice(0, RECENT_LIMIT)) {
+    const id = personalizedProductId(product?.id);
+    if (!id || seenRecentIds.has(id)) continue;
+    seenRecentIds.add(id);
+    recentIds.push(id);
+  }
+
+  const outfitPairs = [];
+  for (const outfit of savedOutfits.slice(0, SAVED_OUTFITS_LIMIT)) {
+    const sourceId = personalizedProductId(outfit?.source?.id);
+    const recommendedId = personalizedProductId(outfit?.product?.id);
+    if (!sourceId || !recommendedId || sourceId === recommendedId) continue;
+    outfitPairs.push({
+      source_product_id:sourceId,
+      recommended_product_id:recommendedId,
+    });
+  }
+
+  const hasCompleteJeanSize = Boolean(
+    sizePreferences.jeanWaist && sizePreferences.jeanLength
+  );
+  return {
+    recent_product_ids:recentIds,
+    saved_outfits:outfitPairs,
+    size_preferences:{
+      alpha:sizePreferences.alpha || null,
+      numeric:sizePreferences.numeric || null,
+      shoe:sizePreferences.shoe || null,
+      jean_waist:hasCompleteJeanSize ? sizePreferences.jeanWaist : null,
+      jean_length:hasCompleteJeanSize ? sizePreferences.jeanLength : null,
+      child:sizePreferences.child || null,
+    },
+  };
+}
+
+function personalizedHasSignals(profile = personalizedProfileSnapshot()) {
+  return Boolean(profile.recent_product_ids.length || profile.saved_outfits.length);
+}
+
+function personalizedFingerprint(profile = personalizedProfileSnapshot()) {
+  return JSON.stringify(profile);
+}
+
+function personalizedExcludedProductIds(profile, includeDisplayed = false) {
+  const ids = [
+    ...profile.recent_product_ids,
+    ...profile.saved_outfits.flatMap(outfit => [
+      outfit.source_product_id,
+      outfit.recommended_product_id,
+    ]),
+  ];
+  if (includeDisplayed) {
+    ids.push(...personalizedProducts.map(product => personalizedProductId(product?.id)));
+  }
+  return Array.from(new Set(ids.filter(Boolean))).slice(0, PERSONALIZED_EXCLUDE_LIMIT);
+}
+
+function markPersonalizedStale() {
+  personalizedStale = true;
+}
+
+function updateRecentProductsTab() {
+  const count = recentProducts.length;
+  recentProductsCount.textContent = String(count);
+  recentProductsCount.hidden = count === 0;
+  clearRecentProductsButton.disabled = count === 0;
+  recentProductsTab.setAttribute(
+    'aria-label',
+    count ? `Son gezilen ürünler, ${count} ürün` : 'Son gezilen ürünler, henüz boş'
+  );
+}
+
+function updateSavedOutfitsTab() {
+  const count = savedOutfits.length;
+  savedOutfitsCount.textContent = String(count);
+  savedOutfitsCount.hidden = count === 0;
+  clearSavedOutfitsButton.disabled = count === 0;
+  savedOutfitsTab.setAttribute(
+    'aria-label',
+    count ? `Kaydedilen kombinler, ${count} kombin` : 'Kaydedilen kombinler, henüz boş'
+  );
+}
+
+function setSaveOutfitButtonState(button) {
+  const isSaved = savedOutfits.some(outfit => outfit.id === button.dataset.savedOutfitId);
+  button.textContent = isSaved ? 'Kaydı kaldır' : 'Kombini kaydet';
+  button.setAttribute('aria-pressed', String(isSaved));
+  const label = button.dataset.outfitLabel || 'Bu kombini';
+  button.setAttribute('aria-label', `${label} ${isSaved ? 'kayıttan kaldır' : 'kaydet'}`);
+}
+
+function updateSaveOutfitButtons() {
+  for (const button of outfitGrid.querySelectorAll('button[data-saved-outfit-id]')) {
+    setSaveOutfitButtonState(button);
+  }
+}
+
+function toggleSavedOutfit(source, product) {
+  const snapshot = savedOutfitSnapshot(source, product);
+  if (!snapshot) return;
+  const savedIndex = savedOutfits.findIndex(outfit => outfit.id === snapshot.id);
+  const wasSaved = savedIndex >= 0;
+  const removedOutfit = wasSaved ? savedOutfits[savedIndex] : null;
+  if (wasSaved) {
+    savedOutfits = savedOutfits.filter(outfit => outfit.id !== snapshot.id);
+  } else {
+    savedOutfits = [
+      snapshot,
+      ...savedOutfits.filter(outfit => outfit.id !== snapshot.id),
+    ].slice(0, SAVED_OUTFITS_LIMIT);
+  }
+  saveSavedOutfits();
+  markPersonalizedStale();
+  updateSavedOutfitsTab();
+  updateSaveOutfitButtons();
+  const message = wasSaved ? 'Kombin kayıttan kaldırıldı.' : 'Kombin kaydedildi.';
+  outfitStatus.textContent = message;
+  if (wasSaved) {
+    showRemovedSavedOutfitUndo(removedOutfit, savedIndex);
+  } else {
+    productViewStatus.textContent = message;
+  }
+}
+
+function activeProductTab() {
+  if (activeProductView === 'personalized') return personalizedProductsTab;
+  if (activeProductView === 'recent') return recentProductsTab;
+  if (activeProductView === 'saved') return savedOutfitsTab;
+  return searchResultsTab;
+}
+
+function scheduleRecentUndoDismiss() {
+  if (recentClearUndo.hidden || !clearUndoType) return;
+  if (recentUndoTimer !== null) window.clearTimeout(recentUndoTimer);
+  recentUndoTimer = window.setTimeout(
+    () => {
+      recentUndoTimer = null;
+      dismissRecentClearUndo();
+    },
+    RECENT_UNDO_TIMEOUT_MS
+  );
+}
+
+function dismissRecentClearUndo({
+  discardBackup = true,
+  restoreFocus = true,
+  animate = true,
+} = {}) {
+  if (recentUndoTimer !== null) window.clearTimeout(recentUndoTimer);
+  recentUndoTimer = null;
+  if (recentUndoHideTimer !== null) window.clearTimeout(recentUndoHideTimer);
+  recentUndoHideTimer = null;
+  const undoHadFocus = recentClearUndo.contains(document.activeElement);
+  if (discardBackup) {
+    recentlyClearedProducts = [];
+    recentlyClearedSavedOutfits = [];
+    recentlyRemovedSavedOutfit = null;
+    clearUndoType = null;
+  }
+  if (restoreFocus && undoHadFocus) activeProductTab().focus();
+
+  const finishHiding = () => {
+    recentUndoHideTimer = null;
+    recentClearUndo.hidden = true;
+    recentClearUndo.classList.remove('is-visible', 'is-hiding');
+  };
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const shouldAnimate = animate && !recentClearUndo.hidden && !reducedMotion;
+  if (!shouldAnimate) {
+    finishHiding();
+    return;
+  }
+  recentClearUndo.classList.remove('is-visible');
+  recentClearUndo.classList.add('is-hiding');
+  recentUndoHideTimer = window.setTimeout(finishHiding, RECENT_UNDO_ANIMATION_MS);
+}
+
+function showClearUndo(type, message, announcement) {
+  clearUndoType = type;
+  recentClearUndoMessage.textContent = message;
+  recentClearUndo.hidden = false;
+  recentClearUndo.classList.remove('is-visible', 'is-hiding');
+  recentClearUndo.getBoundingClientRect();
+  recentClearUndo.classList.add('is-visible');
+  productViewStatus.textContent = announcement;
+  scheduleRecentUndoDismiss();
+}
+
+function showRecentClearUndo(clearedProducts) {
+  dismissRecentClearUndo({ restoreFocus:false, animate:false });
+  recentlyClearedProducts = clearedProducts
+    .map(recentProductSnapshot)
+    .filter(Boolean)
+    .slice(0, RECENT_LIMIT);
+  if (!recentlyClearedProducts.length) return;
+  showClearUndo(
+    'recent',
+    'Son gezilen ürünler temizlendi.',
+    'Son gezilen ürünler temizlendi. 10 saniye içinde geri alabilirsiniz.'
+  );
+}
+
+function showSavedOutfitsClearUndo(clearedOutfits) {
+  dismissRecentClearUndo({ restoreFocus:false, animate:false });
+  recentlyClearedSavedOutfits = clearedOutfits
+    .map(savedOutfitRecordSnapshot)
+    .filter(Boolean)
+    .slice(0, SAVED_OUTFITS_LIMIT);
+  if (!recentlyClearedSavedOutfits.length) return;
+  showClearUndo(
+    'saved',
+    'Kaydedilen kombinler temizlendi.',
+    'Kaydedilen kombinler temizlendi. 10 saniye içinde geri alabilirsiniz.'
+  );
+}
+
+function showRemovedSavedOutfitUndo(outfit, index) {
+  dismissRecentClearUndo({ restoreFocus:false, animate:false });
+  const snapshot = savedOutfitRecordSnapshot(outfit);
+  if (!snapshot) return;
+  recentlyRemovedSavedOutfit = {
+    outfit:snapshot,
+    index:Math.max(0, Number(index) || 0),
+  };
+  showClearUndo(
+    'saved-item',
+    'Kombin kayıttan kaldırıldı.',
+    'Kombin kayıttan kaldırıldı. 10 saniye içinde geri alabilirsiniz.'
+  );
+}
+
+function undoClearRecentProducts() {
+  if (!recentlyClearedProducts.length) {
+    dismissRecentClearUndo();
+    return;
+  }
+  const clearedProducts = recentlyClearedProducts;
+  const currentIds = new Set(recentProducts.map(product => String(product.id)));
+  const restoredProducts = clearedProducts.filter(product => {
+    const productId = String(product.id);
+    if (currentIds.has(productId)) return false;
+    currentIds.add(productId);
+    return true;
+  });
+  recentProducts = [...recentProducts, ...restoredProducts].slice(0, RECENT_LIMIT);
+  dismissRecentClearUndo({ restoreFocus:false });
+  saveRecentProducts();
+  markPersonalizedStale();
+  updateRecentProductsTab();
+  if (activeProductView === 'recent') renderActiveProductView();
+  productViewStatus.textContent = 'Son gezilen ürünler geri getirildi.';
+  const focusTarget = activeProductView === 'recent'
+    ? clearRecentProductsButton
+    : activeProductTab();
+  focusTarget.focus();
+}
+
+function undoClearSavedOutfits() {
+  if (!recentlyClearedSavedOutfits.length) {
+    dismissRecentClearUndo();
+    return;
+  }
+  const clearedOutfits = recentlyClearedSavedOutfits;
+  const currentIds = new Set(savedOutfits.map(outfit => outfit.id));
+  const restoredOutfits = clearedOutfits.filter(outfit => {
+    if (currentIds.has(outfit.id)) return false;
+    currentIds.add(outfit.id);
+    return true;
+  });
+  savedOutfits = [...savedOutfits, ...restoredOutfits].slice(0, SAVED_OUTFITS_LIMIT);
+  dismissRecentClearUndo({ restoreFocus:false });
+  saveSavedOutfits();
+  markPersonalizedStale();
+  updateSavedOutfitsTab();
+  updateSaveOutfitButtons();
+  if (activeProductView === 'saved') renderActiveProductView();
+  productViewStatus.textContent = 'Kaydedilen kombinler geri getirildi.';
+  const focusTarget = activeProductView === 'saved'
+    ? clearSavedOutfitsButton
+    : activeProductTab();
+  focusTarget.focus();
+}
+
+function undoRemovedSavedOutfit() {
+  if (!recentlyRemovedSavedOutfit) {
+    dismissRecentClearUndo();
+    return;
+  }
+  const removed = recentlyRemovedSavedOutfit;
+  const alreadySaved = savedOutfits.some(outfit => outfit.id === removed.outfit.id);
+  if (!alreadySaved) {
+    const restoredOutfits = savedOutfits.slice();
+    const insertIndex = Math.min(removed.index, restoredOutfits.length);
+    restoredOutfits.splice(insertIndex, 0, removed.outfit);
+    savedOutfits = restoredOutfits.slice(0, SAVED_OUTFITS_LIMIT);
+  }
+  dismissRecentClearUndo({ restoreFocus:false });
+  saveSavedOutfits();
+  markPersonalizedStale();
+  updateSavedOutfitsTab();
+  updateSaveOutfitButtons();
+  if (activeProductView === 'saved') renderActiveProductView();
+  productViewStatus.textContent = 'Kombin yeniden kaydedildi.';
+
+  let focusTarget = activeProductTab();
+  if (activeProductView === 'saved') {
+    const removeButtons = grid.querySelectorAll('button[data-remove-saved-outfit]');
+    focusTarget = Array.from(removeButtons).find(
+      button => button.dataset.removeSavedOutfit === removed.outfit.id
+    ) || clearSavedOutfitsButton;
+  }
+  focusTarget.focus();
+}
+
+function undoLastClear() {
+  if (clearUndoType === 'recent') {
+    undoClearRecentProducts();
+    return;
+  }
+  if (clearUndoType === 'saved') {
+    undoClearSavedOutfits();
+    return;
+  }
+  if (clearUndoType === 'saved-item') {
+    undoRemovedSavedOutfit();
+    return;
+  }
+  dismissRecentClearUndo();
+}
+
+function clearRecentProducts() {
+  const clearedProducts = recentProducts.slice();
+  recentProductsTab.focus();
+  recentProducts = [];
+  try {
+    localStorage.removeItem(RECENT_STORAGE_KEY);
+  } catch (_) {
+    // Depolama kapalı olsa da bu oturumdaki liste temizlenir.
+  }
+  markPersonalizedStale();
+  updateRecentProductsTab();
+  if (activeProductView === 'recent') {
+    hideOutfit(false);
+    renderActiveProductView();
+  }
+  showRecentClearUndo(clearedProducts);
+}
+
+function clearSavedOutfits() {
+  const clearedOutfits = savedOutfits.slice();
+  savedOutfitsTab.focus();
+  savedOutfits = [];
+  try {
+    localStorage.removeItem(SAVED_OUTFITS_STORAGE_KEY);
+  } catch (_) {
+    // Depolama kapalı olsa da bu oturumdaki kayıtlar temizlenir.
+  }
+  markPersonalizedStale();
+  updateSavedOutfitsTab();
+  updateSaveOutfitButtons();
+  if (activeProductView === 'saved') renderActiveProductView();
+  showSavedOutfitsClearUndo(clearedOutfits);
+}
+
+function removeSavedOutfit(outfitId) {
+  const removedIndex = savedOutfits.findIndex(outfit => outfit.id === outfitId);
+  if (removedIndex < 0) return;
+  const removedOutfit = savedOutfits[removedIndex];
+  savedOutfits = savedOutfits.filter(outfit => outfit.id !== outfitId);
+  saveSavedOutfits();
+  markPersonalizedStale();
+  updateSavedOutfitsTab();
+  updateSaveOutfitButtons();
+  showRemovedSavedOutfitUndo(removedOutfit, removedIndex);
+  if (activeProductView !== 'saved') return;
+  renderActiveProductView();
+  window.requestAnimationFrame(() => {
+    const buttons = grid.querySelectorAll('button[data-remove-saved-outfit]');
+    const nextButton = buttons[Math.min(removedIndex, buttons.length - 1)];
+    (nextButton || savedOutfitsTab).focus();
+  });
+}
+
+function rememberProduct(product, { refreshRecent = true } = {}) {
+  const snapshot = recentProductSnapshot(product);
+  if (!snapshot) return;
+  recentProducts = [
+    snapshot,
+    ...recentProducts.filter(item => String(item.id) !== snapshot.id),
+  ].slice(0, RECENT_LIMIT);
+  saveRecentProducts();
+  markPersonalizedStale();
+  updateRecentProductsTab();
+
+  if (refreshRecent && activeProductView === 'recent') {
+    window.setTimeout(() => {
+      if (activeProductView === 'recent') setProductView('recent');
+    }, 0);
+  }
+}
+
+function isCombinable(product) {
+  if (COMBINABLE_CATEGORIES.has(product.category)) return true;
+  if (product.category !== 'Jean') return false;
+  const title = String(product.title || '').toLocaleLowerCase('tr-TR');
+  return title.includes('pantolon') && !/(etek|şort|ceket|elbise|tulum|gömlek)/.test(title);
+}
+
+function createProductCard(product, {
+  showOutfitAction = true,
+  showReason = false,
+  historicalSizeStatus = false,
+} = {}) {
+  const card = element('article', 'card');
+  const link = element('a', 'card-link');
+  const productUrl = safeUrl(product.link);
+  if (productUrl) {
+    link.href = productUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.addEventListener('click', () => rememberProduct(product));
+  }
+
+  const media = element('div', 'media');
+  const imageUrl = safeUrl(String(product.image || '').replace(/^http:\/\//, 'https://'));
+  if (imageUrl) {
+    const image = element('img');
+    image.src = imageUrl;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.addEventListener('error', () => image.remove());
+    media.append(image);
+  }
+
+  const body = element('div', 'card-body');
+  body.append(element('div', 'product-title', product.title || 'Ürün'));
+
+  const price = element('div', 'price', formatPrice(product.sale_price));
+  const salePrice = product.sale_price == null ? NaN : Number(product.sale_price);
+  const oldPrice = product.price == null ? NaN : Number(product.price);
+  if (Number.isFinite(salePrice) && Number.isFinite(oldPrice) && salePrice < oldPrice) {
+    price.append(element('span', 'old', formatPrice(oldPrice)));
+    const discountPercent = Math.round((oldPrice - salePrice) / oldPrice * 100);
+    if (discountPercent > 0) {
+      const badge = element('span', 'discount-badge', `%${discountPercent}`);
+      badge.setAttribute('aria-label', `Yüzde ${discountPercent} indirim`);
+      media.append(badge);
+    }
+  }
+  body.append(price);
+
+  const patterns = Array.isArray(product.patterns) ? product.patterns : [];
+  const tags = [product.color, ...patterns].filter(Boolean).join(' · ');
+  body.append(element('div', 'tags', tags));
+  appendRememberedSizeStatus(body, product, { historical:historicalSizeStatus });
+  link.append(media, body);
+  card.append(link);
+
+  if (showReason && product.reason) {
+    card.append(element('p', 'reason', product.reason));
+  }
+
+  if (showOutfitAction && isCombinable(product)) {
+    const button = element('button', 'outfit-trigger', 'Bununla kombinle');
+    button.type = 'button';
+    button.dataset.outfitId = product.id;
+    button.setAttribute('aria-controls', 'outfit');
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-label', `${product.title || 'Bu ürün'} için kombin önerilerini göster`);
+    card.append(button);
+  }
+  return card;
+}
+
+function createOutfitRecommendationCard(source, product, index = 0) {
+  const card = createProductCard(product, { showOutfitAction:false, showReason:true });
+  const snapshot = savedOutfitSnapshot(source, product);
+  if (!snapshot) return card;
+
+  const editActions = element('div', 'outfit-edit-actions');
+  editActions.setAttribute('role', 'group');
+  editActions.setAttribute(
+    'aria-label',
+    `${product?.title || 'Bu tamamlayıcı'} önerisini düzenle`
+  );
+  editActions.append(element('span', 'outfit-edit-label', 'Kombini düzenle'));
+  for (const [preference, option] of Object.entries(OUTFIT_EDIT_OPTIONS)) {
+    const editButton = element('button', 'outfit-edit-button', option.label);
+    editButton.type = 'button';
+    editButton.dataset.outfitPreference = preference;
+    editButton.dataset.outfitEditIndex = String(index);
+    editButton.dataset.currentProductId = String(product.id);
+    editButton.setAttribute(
+      'aria-label',
+      `${product?.title || 'Bu tamamlayıcı'} yerine ${option.label.toLocaleLowerCase('tr-TR')} göster`
+    );
+    editActions.append(editButton);
+  }
+  card.append(editActions);
+
+  const button = element('button', 'save-outfit-button');
+  button.type = 'button';
+  button.dataset.savedOutfitId = snapshot.id;
+  button.dataset.outfitLabel = `${source?.title || 'Seçili ürün'} ile ${product?.title || 'önerilen ürün'} kombinini`;
+  setSaveOutfitButtonState(button);
+  button.addEventListener('click', () => toggleSavedOutfit(source, product));
+  card.append(button);
+  return card;
+}
+
+function createSavedOutfitCard(outfit) {
+  const card = element('article', 'saved-outfit');
+  const head = element('div', 'saved-outfit-head');
+  head.append(element('h3', 'saved-outfit-title', 'Kaydedilen kombin'));
+  card.append(head);
+
+  const products = element('div', 'saved-outfit-products');
+  const sourceItem = element('div', 'saved-outfit-item');
+  sourceItem.append(
+    element('span', 'saved-outfit-label', 'Seçtiğin parça'),
+    createProductCard(outfit.source, {
+      showOutfitAction:false,
+      historicalSizeStatus:true,
+    })
+  );
+  const recommendedItem = element('div', 'saved-outfit-item');
+  recommendedItem.append(
+    element('span', 'saved-outfit-label', 'Tamamlayıcı parça'),
+    createProductCard(outfit.product, {
+      showOutfitAction:false,
+      historicalSizeStatus:true,
+    })
+  );
+  products.append(sourceItem, recommendedItem);
+  card.append(products);
+
+  if (outfit.reason) card.append(element('p', 'saved-outfit-reason', outfit.reason));
+
+  const removeButton = element('button', 'saved-outfit-remove', 'Kaydı kaldır');
+  removeButton.type = 'button';
+  removeButton.dataset.removeSavedOutfit = outfit.id;
+  removeButton.setAttribute(
+    'aria-label',
+    `${outfit.source.title} ile ${outfit.product.title} kombinini kayıttan kaldır`
+  );
+  card.append(removeButton);
+  return card;
+}
+
+function renderSearchMeta(data) {
+  meta.replaceChildren();
+  const understood = data.understood || {};
+  const entries = Object.entries(understood);
+  if (entries.length) {
+    const row = element('div', 'meta-row');
+    row.append(element('span', 'meta-label', 'Anlaşılan:'));
+    for (const [key, value] of entries) {
+      const display = Array.isArray(value) ? value.join(', ') : value;
+      row.append(element('span', 'chip', `${FILTER_LABELS[key] || key}: ${display}`));
+    }
+    meta.append(row);
+  } else {
+    meta.append(element('div', '', 'Serbest anlamsal arama'));
+  }
+
+  if (data.relaxed && data.relaxed.length) {
+    meta.append(element(
+      'div',
+      'warn',
+      `Tam eşleşme az bulundu; şu kısıtlar esnetildi: ${data.relaxed.map(key => FILTER_LABELS[key] || key).join(', ')} (eşleşenler önde)`
+    ));
+  }
+  meta.append(element('div', 'result-count', `${data.count || 0} sonuç`));
+}
+
+function renderProductGrid(products, {
+  historicalSizeStatus = false,
+  showReason = false,
+} = {}) {
+  productsById.clear();
+  const cards = [];
+  for (const product of products || []) {
+    productsById.set(String(product.id), product);
+    cards.push(createProductCard(product, { historicalSizeStatus, showReason }));
+  }
+  grid.replaceChildren(...cards);
+}
+
+function createPersonalizedEmptyState(title, copy, actions = []) {
+  productsById.clear();
+  const empty = element('div', 'empty-state personalized-empty');
+  empty.append(
+    element('h2', 'personalized-empty-title', title),
+    element('p', 'personalized-empty-copy', copy)
+  );
+  if (actions.length) {
+    const actionRow = element('div', 'personalized-empty-actions');
+    for (const action of actions) {
+      const button = element('button', '', action.label);
+      button.type = 'button';
+      button.addEventListener('click', action.onClick);
+      actionRow.append(button);
+    }
+    empty.append(actionRow);
+  }
+  grid.replaceChildren(empty);
+}
+
+function renderPersonalizedView() {
+  const profile = personalizedProfileSnapshot();
+  const hasSignals = personalizedHasSignals(profile);
+  refreshPersonalizedProductsButton.disabled = personalizedLoading || !hasSignals;
+  refreshPersonalizedProductsButton.textContent = personalizedLoading
+    ? 'Öneriler yenileniyor…'
+    : 'Önerileri yenile';
+  if (personalizedLoading) grid.setAttribute('aria-busy', 'true');
+  else grid.removeAttribute('aria-busy');
+
+  if (personalizedProducts.length) {
+    personalizedSummary.textContent = personalizedLoading
+      ? 'Mevcut önerilerin korunuyor; yeni seçenekler aranıyor.'
+      : (personalizedError
+        ? personalizedErrorMessage || 'Öneriler yenilenemedi; mevcut seçeneklerin korunuyor.'
+        : personalizedSummaryText || 'Son gezdiklerin ve kaydettiğin kombinlere göre seçildi.');
+    renderProductGrid(personalizedProducts, { showReason:true });
+    return;
+  }
+
+  if (personalizedLoading) {
+    personalizedSummary.textContent = 'Sana özel öneriler hazırlanıyor…';
+    createPersonalizedEmptyState(
+      'Önerilerin hazırlanıyor',
+      'Son gezdiklerin ve kaydettiğin kombinler değerlendirilirken kısa bir süre bekle.'
+    );
+    return;
+  }
+
+  if (personalizedError) {
+    personalizedSummary.textContent = personalizedErrorMessage
+      || 'Sana özel öneriler şu anda yüklenemedi.';
+    createPersonalizedEmptyState(
+      'Öneriler yüklenemedi',
+      personalizedErrorMessage
+        || 'Mevcut arama ve kayıtların duruyor. Biraz sonra yeniden deneyebilirsin.',
+      [
+        { label:'Tekrar dene', onClick:() => loadPersonalizedProducts({ force:true }) },
+        { label:'Ürün ara', onClick:focusPersonalizedSearch },
+      ]
+    );
+    return;
+  }
+
+  if (!hasSignals) {
+    personalizedSummary.textContent = 'Henüz kişisel öneri oluşturacak bir gezinme veya kayıt yok.';
+    createPersonalizedEmptyState(
+      'Seni biraz daha tanımamız gerekiyor',
+      'Sana özel öneriler için birkaç ürüne göz at veya bir kombin kaydet.',
+      [
+        { label:'Ürün ara', onClick:focusPersonalizedSearch },
+        { label:'Kaydedilen kombinlere git', onClick:() => setProductView('saved', { focus:true }) },
+      ]
+    );
+    return;
+  }
+
+  if (personalizedLoaded) {
+    personalizedSummary.textContent = personalizedSummaryText
+      || 'Bu tercihlerle eşleşen yeni bir ürün bulunamadı.';
+    createPersonalizedEmptyState(
+      'Şimdilik uygun yeni ürün yok',
+      'Önerileri yeniden deneyebilir veya detaylı aramaya dönebilirsin.',
+      [
+        { label:'Önerileri yeniden dene', onClick:() => loadPersonalizedProducts({ force:true }) },
+        { label:'Ürün ara', onClick:focusPersonalizedSearch },
+      ]
+    );
+    return;
+  }
+
+  personalizedSummary.textContent = 'Sana özel öneriler hazırlanıyor…';
+  createPersonalizedEmptyState(
+    'Önerilerin hazırlanıyor',
+    'Son gezdiklerin ve kaydettiğin kombinler değerlendirilirken kısa bir süre bekle.'
+  );
+}
+
+function focusPersonalizedSearch() {
+  setProductView('search');
+  queryInput.focus();
+}
+
+function applyPersonalizedResult(result, fingerprint) {
+  personalizedProducts = result.products.slice(0, PERSONALIZED_LIMIT);
+  personalizedSummaryText = result.summary;
+  personalizedErrorMessage = '';
+  personalizedLoaded = true;
+  personalizedError = false;
+  personalizedStale = false;
+  personalizedProfileFingerprint = fingerprint;
+}
+
+function ensurePersonalizedProducts() {
+  const profile = personalizedProfileSnapshot();
+  const fingerprint = personalizedFingerprint(profile);
+  if (!personalizedHasSignals(profile)) {
+    if (personalizedController) personalizedController.abort();
+    personalizedController = null;
+    personalizedRequestId += 1;
+    personalizedProducts = [];
+    personalizedSummaryText = '';
+    personalizedErrorMessage = '';
+    personalizedLoaded = false;
+    personalizedLoading = false;
+    personalizedError = false;
+    personalizedStale = false;
+    personalizedProfileFingerprint = fingerprint;
+    personalizedPendingFingerprint = '';
+    if (activeProductView === 'personalized') renderPersonalizedView();
+    return;
+  }
+  if (personalizedLoading && personalizedPendingFingerprint === fingerprint) return;
+  if (!personalizedStale
+      && personalizedLoaded
+      && personalizedProfileFingerprint === fingerprint) return;
+  const cached = personalizedCache.get(fingerprint);
+  if (cached) {
+    applyPersonalizedResult(cached, fingerprint);
+    if (activeProductView === 'personalized') renderPersonalizedView();
+    return;
+  }
+  loadPersonalizedProducts();
+}
+
+async function loadPersonalizedProducts({ force = false, rotate = false } = {}) {
+  const profile = personalizedProfileSnapshot();
+  const fingerprint = personalizedFingerprint(profile);
+  if (!personalizedHasSignals(profile)) {
+    ensurePersonalizedProducts();
+    return;
+  }
+  if (!force) {
+    const cached = personalizedCache.get(fingerprint);
+    if (cached) {
+      applyPersonalizedResult(cached, fingerprint);
+      if (activeProductView === 'personalized') renderPersonalizedView();
+      return;
+    }
+  }
+
+  if (personalizedController) personalizedController.abort();
+  const controller = new AbortController();
+  personalizedController = controller;
+  const requestId = ++personalizedRequestId;
+  const sameProfile = personalizedProfileFingerprint === fingerprint;
+  const previousProducts = sameProfile ? personalizedProducts.slice() : [];
+  if (!sameProfile) {
+    personalizedProducts = [];
+    personalizedSummaryText = '';
+    personalizedLoaded = false;
+  }
+  const requestBody = {
+    recent_product_ids:profile.recent_product_ids.slice(0, RECENT_LIMIT),
+    saved_outfits:profile.saved_outfits.slice(0, SAVED_OUTFITS_LIMIT),
+    size_preferences:profile.size_preferences,
+    exclude_product_ids:personalizedExcludedProductIds(profile, rotate),
+    limit:PERSONALIZED_LIMIT,
+  };
+  const excludedIds = new Set(requestBody.exclude_product_ids);
+  personalizedLoading = true;
+  personalizedError = false;
+  personalizedErrorMessage = '';
+  personalizedPendingFingerprint = fingerprint;
+  if (activeProductView === 'personalized') {
+    productViewStatus.textContent = rotate
+      ? 'Yeni sana özel öneriler aranıyor.'
+      : 'Sana özel öneriler yükleniyor.';
+    renderPersonalizedView();
+  }
+
+  try {
+    const response = await fetch('/personalized-recommendations', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify(requestBody),
+      signal:controller.signal,
+    });
+    if (!response.ok) {
+      const requestError = new Error(`HTTP ${response.status}`);
+      requestError.status = response.status;
+      throw requestError;
+    }
+    const data = await response.json();
+    if (controller.signal.aborted || requestId !== personalizedRequestId) return;
+
+    const seenIds = new Set();
+    const products = (Array.isArray(data.products) ? data.products : [])
+      .filter(product => {
+        const id = personalizedProductId(product?.id);
+        if (!id || seenIds.has(id) || excludedIds.has(id)) return false;
+        seenIds.add(id);
+        return true;
+      })
+      .slice(0, PERSONALIZED_LIMIT);
+    const result = {
+      personalized:Boolean(data.personalized),
+      strategy:String(data.strategy || ''),
+      signalCount:Number(data.signal_count) || 0,
+      summary:String(data.summary || '').trim().slice(0, 500),
+      products,
+    };
+
+    if (personalizedFingerprint() !== fingerprint) return;
+    personalizedLoading = false;
+    if (rotate && !products.length && previousProducts.length) {
+      personalizedProducts = previousProducts;
+      personalizedLoaded = true;
+      personalizedError = false;
+      personalizedErrorMessage = '';
+      personalizedStale = false;
+      personalizedProfileFingerprint = fingerprint;
+      personalizedSummaryText = 'Gösterilebilecek yeni bir alternatif bulunamadı; mevcut önerilerin korunuyor.';
+      productViewStatus.textContent = 'Yeni bir alternatif bulunamadı. Mevcut öneriler korunuyor.';
+    } else {
+      personalizedCache.set(fingerprint, result);
+      applyPersonalizedResult(result, fingerprint);
+      productViewStatus.textContent = products.length
+        ? `${products.length} sana özel öneri yüklendi.`
+        : 'Bu tercihlerle eşleşen yeni bir ürün bulunamadı.';
+    }
+    if (activeProductView === 'personalized') renderPersonalizedView();
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    if (requestId !== personalizedRequestId) return;
+    personalizedLoading = false;
+    personalizedError = true;
+    personalizedProducts = previousProducts;
+    personalizedErrorMessage = error.status === 404
+      ? 'Öneri servisi eski sürümle çalışıyor. Uygulama sunucusunu yeniden başlatıp tekrar dene.'
+      : 'Öneri servisine ulaşılamadı. Docker ve uygulama sunucusu açıkken tekrar dene.';
+    productViewStatus.textContent = 'Sana özel öneriler yüklenemedi. Tekrar deneyebilirsin.';
+    if (activeProductView === 'personalized') renderPersonalizedView();
+  } finally {
+    if (personalizedController === controller) personalizedController = null;
+    if (requestId === personalizedRequestId) {
+      const profileChangedDuringRequest = personalizedFingerprint() !== fingerprint;
+      personalizedLoading = false;
+      personalizedPendingFingerprint = '';
+      if (activeProductView === 'personalized') {
+        grid.removeAttribute('aria-busy');
+        refreshPersonalizedProductsButton.disabled = !personalizedHasSignals();
+        refreshPersonalizedProductsButton.textContent = 'Önerileri yenile';
+        if (profileChangedDuringRequest) {
+          personalizedProducts = [];
+          personalizedSummaryText = '';
+          personalizedError = false;
+          personalizedErrorMessage = '';
+          personalizedLoaded = false;
+          personalizedStale = true;
+          renderPersonalizedView();
+          window.setTimeout(() => {
+            if (activeProductView === 'personalized') ensurePersonalizedProducts();
+          }, 0);
+        }
+      }
+    }
+  }
+}
+
+function renderSavedOutfits() {
+  productsById.clear();
+  if (!savedOutfits.length) {
+    grid.replaceChildren(element(
+      'p',
+      'empty-state',
+      'Henüz kaydettiğin bir kombin yok. Bir kombin önerisindeki “Kombini kaydet” düğmesini kullanabilirsin.'
+    ));
+    return;
+  }
+  grid.replaceChildren(...savedOutfits.map(createSavedOutfitCard));
+}
+
+function renderActiveProductView() {
+  if (activeProductView === 'personalized') {
+    renderPersonalizedView();
+    return;
+  }
+  if (activeProductView === 'saved') {
+    renderSavedOutfits();
+    return;
+  }
+  if (activeProductView === 'recent') {
+    if (recentProducts.length) {
+      renderProductGrid(recentProducts, { historicalSizeStatus:true });
+    } else {
+      productsById.clear();
+      grid.replaceChildren(element(
+        'p',
+        'empty-state',
+        'Henüz gezdiğin bir ürün yok. Bir ürün kartına dokunduğunda burada görünecek.'
+      ));
+    }
+    return;
+  }
+  renderProductGrid(searchProducts);
+}
+
+function setProductView(view, { render = true, focus = false } = {}) {
+  if (!['search', 'personalized', 'recent', 'saved'].includes(view)) return;
+  hideOutfit(false);
+  activeProductView = view;
+  const personalizedIsActive = view === 'personalized';
+  const recentIsActive = view === 'recent';
+  const savedIsActive = view === 'saved';
+  const tabsByView = {
+    search:searchResultsTab,
+    personalized:personalizedProductsTab,
+    recent:recentProductsTab,
+    saved:savedOutfitsTab,
+  };
+  for (const [tabView, tab] of Object.entries(tabsByView)) {
+    const isActive = tabView === view;
+    tab.setAttribute('aria-selected', String(isActive));
+    tab.tabIndex = isActive ? 0 : -1;
+  }
+  meta.hidden = view !== 'search';
+  personalizedMeta.hidden = !personalizedIsActive;
+  refreshPersonalizedProductsButton.hidden = !personalizedIsActive;
+  clearRecentProductsButton.hidden = !recentIsActive;
+  clearSavedOutfitsButton.hidden = !savedIsActive;
+  grid.classList.toggle('saved-outfits-grid', savedIsActive);
+  if (!personalizedIsActive) grid.removeAttribute('aria-busy');
+  const activeTab = tabsByView[view];
+  grid.setAttribute('aria-labelledby', activeTab.id);
+  if (render) renderActiveProductView();
+  if (personalizedIsActive) ensurePersonalizedProducts();
+  if (focus) {
+    activeTab.focus();
+    activeTab.scrollIntoView({ block:'nearest', inline:'nearest' });
+  }
+}
+
+function setSourceProduct(product) {
+  outfitSource.replaceChildren();
+
+  const media = element('div', 'source-media');
+  const imageUrl = safeUrl(String(product?.image || '').replace(/^http:\/\//, 'https://'));
+  if (imageUrl) {
+    const image = element('img');
+    image.src = imageUrl;
+    image.alt = `${product?.title || 'Seçili ürün'} görseli`;
+    image.addEventListener('error', () => image.remove());
+    media.append(image);
+  }
+
+  const copy = element('div', 'source-copy');
+  copy.append(element('span', 'source-label', 'Seçtiğin parça'));
+  copy.append(element('span', 'source-title', product?.title || 'Ürün'));
+  const details = [product?.category, product?.color].filter(Boolean).join(' · ');
+  if (details) copy.append(element('span', 'source-detail', details));
+  appendRememberedSizeStatus(copy, product);
+
+  if (product?.sale_price !== null && product?.sale_price !== undefined) {
+    const price = element('div', 'source-price', formatPrice(product.sale_price));
+    const salePrice = Number(product.sale_price);
+    const oldPrice = product.price == null ? NaN : Number(product.price);
+    if (Number.isFinite(salePrice) && Number.isFinite(oldPrice) && salePrice < oldPrice) {
+      price.append(element('span', 'old', formatPrice(oldPrice)));
+    }
+    copy.append(price);
+  }
+
+  outfitSource.append(media, copy);
+}
+
+function positionOutfitAtCard(button) {
+  const selectedCard = button?.closest('.card');
+  if (!selectedCard || selectedCard.parentElement !== grid) return;
+
+  const gutter = 12;
+  const gap = 10;
+  const gridRect = grid.getBoundingClientRect();
+  const cardRect = selectedCard.getBoundingClientRect();
+  const panelRect = outfitSection.getBoundingClientRect();
+
+  const maximumLeft = Math.max(gutter, window.innerWidth - panelRect.width - gutter);
+  const preferredLeft = cardRect.left + (cardRect.width - panelRect.width) / 2;
+  const left = Math.min(Math.max(preferredLeft, gutter), maximumLeft);
+
+  const spaceBelow = window.innerHeight - cardRect.bottom - gutter;
+  const spaceAbove = cardRect.top - gutter;
+  let preferredTop;
+  if (panelRect.height + gap <= spaceBelow) {
+    preferredTop = cardRect.bottom + gap;
+  } else if (panelRect.height + gap <= spaceAbove) {
+    preferredTop = cardRect.top - panelRect.height - gap;
+  } else if (spaceBelow >= spaceAbove) {
+    preferredTop = cardRect.bottom + gap;
+  } else {
+    preferredTop = cardRect.top - panelRect.height - gap;
+  }
+
+  const maximumTop = Math.max(gutter, window.innerHeight - panelRect.height - gutter);
+  const top = Math.min(Math.max(preferredTop, gutter), maximumTop);
+
+  outfitSection.style.left = `${Math.round(left - gridRect.left)}px`;
+  outfitSection.style.top = `${Math.round(top - gridRect.top)}px`;
+}
+
+function hideOutfit(restoreFocus = false) {
+  if (outfitController) outfitController.abort();
+  outfitController = null;
+  if (outfitEditController) outfitEditController.abort();
+  outfitEditController = null;
+  outfitEditRequestId += 1;
+  activeOutfitData = null;
+  outfitProductHistoryByIndex = new Map();
+  if (outfitPlacementFrame !== null) cancelAnimationFrame(outfitPlacementFrame);
+  outfitPlacementFrame = null;
+  outfitSection.hidden = true;
+  outfitSection.setAttribute('aria-busy', 'false');
+  outfitGrid.replaceChildren();
+  outfitStatus.textContent = '';
+  meta.after(outfitSection);
+  if (activeOutfitButton) {
+    activeOutfitButton.setAttribute('aria-expanded', 'false');
+    activeOutfitButton.disabled = false;
+    if (restoreFocus && document.contains(activeOutfitButton)) activeOutfitButton.focus();
+  }
+  activeOutfitButton = null;
+}
+
+function showOutfitPanel(product, button) {
+  if (outfitEditController) outfitEditController.abort();
+  outfitEditController = null;
+  outfitEditRequestId += 1;
+  activeOutfitData = null;
+  outfitProductHistoryByIndex = new Map();
+  const selectedCard = button?.closest('.card');
+  if (selectedCard?.parentElement === grid) selectedCard.after(outfitSection);
+  outfitSection.setAttribute('aria-busy', 'true');
+  outfitTitle.textContent = 'Kombin önerileri hazırlanıyor…';
+  outfitSummary.textContent = 'Renk ve ürün uyumu değerlendiriliyor.';
+  setSourceProduct(product);
+  outfitStatus.textContent = 'Uygun parçalar aranıyor…';
+  outfitGrid.replaceChildren();
+  outfitSection.hidden = false;
+  positionOutfitAtCard(button);
+  outfitClose.focus({ preventScroll:true });
+}
+
+function renderOutfit(data) {
+  const products = Array.isArray(data.products) ? data.products.slice() : [];
+  activeOutfitData = { ...data, products };
+  outfitProductHistoryByIndex = new Map(
+    products.map((product, index) => [
+      index,
+      new Set(String(product?.id || '') ? [String(product.id)] : []),
+    ])
+  );
+  outfitSection.setAttribute('aria-busy', 'false');
+  outfitTitle.textContent = data.title || 'Bu parçayla kombinlenebilir';
+  outfitSummary.textContent = data.summary || '';
+  setSourceProduct(data.source);
+  outfitGrid.replaceChildren(...products.map((product, index) =>
+    createOutfitRecommendationCard(data.source, product, index)
+  ));
+  if (!data.eligible) {
+    outfitStatus.textContent = 'Bu ürün için güvenli bir kombin önerisi hazırlanamadı.';
+  } else if (!products.length) {
+    outfitStatus.textContent = 'Şu anda stokta uygun bir tamamlayıcı parça bulunamadı.';
+  } else {
+    outfitStatus.textContent = `${products.length} uyumlu parça önerildi.`;
+  }
+  positionOutfitAtCard(activeOutfitButton);
+}
+
+function setOutfitEditBusy(card, busy) {
+  if (card) {
+    if (busy) card.setAttribute('aria-busy', 'true');
+    else card.removeAttribute('aria-busy');
+  }
+  for (const button of outfitGrid.querySelectorAll('button[data-outfit-preference]')) {
+    button.disabled = busy;
+  }
+}
+
+function currentOutfitEditButton(index, preference) {
+  return Array.from(
+    outfitGrid.querySelectorAll('button[data-outfit-preference]')
+  ).find(button => (
+    Number(button.dataset.outfitEditIndex) === index
+    && button.dataset.outfitPreference === preference
+  )) || null;
+}
+
+async function replaceOutfitRecommendation(button) {
+  const preference = button.dataset.outfitPreference;
+  const option = OUTFIT_EDIT_OPTIONS[preference];
+  const index = Number(button.dataset.outfitEditIndex);
+  const source = activeOutfitData?.source;
+  const current = activeOutfitData?.products?.[index];
+  const card = button.closest('.card');
+  if (!option || !source?.id || !current?.id || !card) return;
+  if (String(current.id) !== button.dataset.currentProductId) return;
+
+  const sourceId = String(source.id);
+  const params = new URLSearchParams();
+  params.set('limit', '1');
+  params.set('preference', preference);
+  params.set('current_product_id', String(current.id));
+  appendPreferredOutfitSizes(params, source);
+  let productHistory = outfitProductHistoryByIndex.get(index);
+  if (!productHistory) {
+    productHistory = new Set([String(current.id)]);
+    outfitProductHistoryByIndex.set(index, productHistory);
+  }
+  const visibleProductIds = activeOutfitData.products
+    .map(product => String(product?.id || ''))
+    .filter(Boolean);
+  const excludedProductIds = Array.from(
+    new Set([...productHistory, ...visibleProductIds])
+  );
+  if (excludedProductIds.length > OUTFIT_EDIT_EXCLUDE_LIMIT) {
+    outfitStatus.textContent = 'Bu kart için gösterilebilecek tüm farklı seçenekleri gördün.';
+    button.focus({ preventScroll:true });
+    return;
+  }
+  for (const productId of excludedProductIds) {
+    params.append('exclude_product_id', productId);
+  }
+
+  if (outfitEditController) outfitEditController.abort();
+  const controller = new AbortController();
+  outfitEditController = controller;
+  const requestId = ++outfitEditRequestId;
+  setOutfitEditBusy(card, true);
+  outfitStatus.textContent = option.loading;
+  positionOutfitAtCard(activeOutfitButton);
+
+  try {
+    const response = await fetch(
+      `/products/${encodeURIComponent(sourceId)}/outfit-recommendations?${params.toString()}`,
+      { signal:controller.signal }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (controller.signal.aborted || requestId !== outfitEditRequestId) return;
+    if (String(activeOutfitData?.source?.id || '') !== sourceId) return;
+
+    const replacement = Array.isArray(data.products) ? data.products[0] : null;
+    if (!replacement?.id) {
+      outfitStatus.textContent = option.empty;
+      setOutfitEditBusy(card, false);
+      button.focus({ preventScroll:true });
+      positionOutfitAtCard(activeOutfitButton);
+      return;
+    }
+
+    const replacementId = String(replacement.id);
+    if (productHistory.has(replacementId) || visibleProductIds.includes(replacementId)) {
+      outfitStatus.textContent = 'Yeni ve farklı bir seçenek bulunamadı. Mevcut öneri korunuyor.';
+      setOutfitEditBusy(card, false);
+      button.focus({ preventScroll:true });
+      positionOutfitAtCard(activeOutfitButton);
+      return;
+    }
+
+    const replacementCard = createOutfitRecommendationCard(source, replacement, index);
+    productHistory.add(replacementId);
+    activeOutfitData.products[index] = replacement;
+    card.replaceWith(replacementCard);
+    setOutfitEditBusy(replacementCard, false);
+    outfitStatus.textContent = option.success;
+    positionOutfitAtCard(activeOutfitButton);
+    window.requestAnimationFrame(() => {
+      const focusTarget = replacementCard.querySelector(
+        `button[data-outfit-preference="${preference}"]`
+      );
+      focusTarget?.focus({ preventScroll:true });
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    if (requestId !== outfitEditRequestId) return;
+    outfitStatus.textContent = 'Kombin şu anda değiştirilemedi. Mevcut öneri korunuyor.';
+    setOutfitEditBusy(card, false);
+    button.focus({ preventScroll:true });
+    positionOutfitAtCard(activeOutfitButton);
+  } finally {
+    if (outfitEditController === controller) {
+      outfitEditController = null;
+      if (!outfitSection.hidden) {
+        setOutfitEditBusy(null, false);
+        currentOutfitEditButton(index, preference)?.focus({ preventScroll:true });
+      }
+    }
+  }
+}
+
+async function loadOutfit(productId, button) {
+  if (activeOutfitButton === button && !outfitSection.hidden) {
+    hideOutfit(true);
+    return;
+  }
+  const sourceProduct = productsById.get(String(productId));
+  rememberProduct(sourceProduct, { refreshRecent:false });
+  if (outfitController) outfitController.abort();
+  outfitController = null;
+  if (activeOutfitButton) {
+    activeOutfitButton.setAttribute('aria-expanded', 'false');
+    activeOutfitButton.disabled = false;
+  }
+  activeOutfitButton = button;
+  button.setAttribute('aria-expanded', 'true');
+  button.disabled = true;
+  showOutfitPanel(sourceProduct, button);
+
+  const cacheKey = outfitCacheKey(productId, sourceProduct);
+  if (outfitCache.has(cacheKey)) {
+    button.disabled = false;
+    renderOutfit(outfitCache.get(cacheKey));
+    return;
+  }
+
+  const controller = new AbortController();
+  outfitController = controller;
+  try {
+    let outfitUrl = `/products/${encodeURIComponent(productId)}/outfit-recommendations?limit=4`;
+    const preferredSizeParams = new URLSearchParams();
+    appendPreferredOutfitSizes(preferredSizeParams, sourceProduct);
+    const preferredSizeQuery = preferredSizeParams.toString();
+    if (preferredSizeQuery) outfitUrl += `&${preferredSizeQuery}`;
+    const response = await fetch(
+      outfitUrl,
+      { signal:controller.signal }
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (controller.signal.aborted || activeOutfitButton !== button) return;
+    outfitCache.set(cacheKey, data);
+    renderOutfit(data);
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    outfitSection.setAttribute('aria-busy', 'false');
+    outfitTitle.textContent = 'Kombin önerileri yüklenemedi';
+    outfitSummary.textContent = 'Detaylı arama sonuçlarınız aynen duruyor. Biraz sonra yeniden deneyebilirsiniz.';
+    outfitStatus.textContent = 'Kombin önerileri yüklenemedi. Lütfen biraz sonra yeniden deneyin.';
+    outfitGrid.replaceChildren();
+    positionOutfitAtCard(activeOutfitButton);
+  } finally {
+    if (activeOutfitButton === button) button.disabled = false;
+    if (outfitController === controller) outfitController = null;
+  }
+}
+
+async function performSearch(query) {
+  if (searchController) searchController.abort();
+  searchProducts = [];
+  lastSearchQuery = query;
+  setProductView('search', { render:false });
+  outfitCache.clear();
+  const controller = new AbortController();
+  searchController = controller;
+  const requestId = ++searchRequestId;
+  form.setAttribute('aria-busy', 'true');
+  meta.textContent = 'Aranıyor…';
+  grid.replaceChildren();
+
+  try {
+    let searchUrl = `/search?q=${encodeURIComponent(query)}&limit=24`;
+    searchUrl += buildFilterQuery();
+    const response = await fetch(searchUrl, { signal:controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (controller.signal.aborted || requestId !== searchRequestId) return;
+    renderSearchMeta(data);
+    searchProducts = Array.isArray(data.products) ? data.products : [];
+    searchFacets = (data.facets && typeof data.facets === 'object') ? data.facets : {};
+    updateDynamicFacets();
+    if (activeProductView === 'search') renderProductGrid(searchProducts);
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    if (requestId === searchRequestId) {
+      meta.textContent = 'Arama şu anda tamamlanamadı. Lütfen yeniden deneyin.';
+    }
+  } finally {
+    if (requestId === searchRequestId) {
+      form.setAttribute('aria-busy', 'false');
+    }
+    if (searchController === controller) searchController = null;
+  }
+}
+
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  const query = queryInput.value.trim();
+  if (!query && !totalFilterCount()) {
+    queryInput.focus();
+    return;
+  }
+  performSearch(query);
+});
+
+grid.addEventListener('click', event => {
+  const removeButton = event.target.closest('button[data-remove-saved-outfit]');
+  if (removeButton) {
+    removeSavedOutfit(removeButton.dataset.removeSavedOutfit);
+    return;
+  }
+  const button = event.target.closest('button[data-outfit-id]');
+  if (!button) return;
+  loadOutfit(button.dataset.outfitId, button);
+});
+
+outfitGrid.addEventListener('click', event => {
+  const button = event.target.closest('button[data-outfit-preference]');
+  if (!button) return;
+  replaceOutfitRecommendation(button);
+});
+
+searchResultsTab.addEventListener('click', () => setProductView('search'));
+personalizedProductsTab.addEventListener('click', () => setProductView('personalized'));
+recentProductsTab.addEventListener('click', () => setProductView('recent'));
+savedOutfitsTab.addEventListener('click', () => setProductView('saved'));
+
+// --- Manuel filtreler (Filtre paneli) --------------------------------------
+const filterToggle = document.getElementById('filter-toggle');
+const filterPanel = document.getElementById('filter-panel');
+const filterCount = document.getElementById('filter-count');
+const clearFiltersButton = document.getElementById('clear-filters');
+
+// Kanonik değerler payload'daki alanlarla (color/gender/age_group/patterns) birebir.
+const FILTER_COLORS = [
+  ['Siyah', '#1a1a1a'], ['Beyaz', '#f4f4f2'], ['Gri', '#9aa0a6'],
+  ['Antrasit', '#3b3f45'], ['Ekru', '#e7e0cd'], ['Bej', '#d8c7a0'],
+  ['Kahve', '#6b4a2b'], ['Lacivert', '#1f2a44'], ['İndigo', '#3f4d8a'],
+  ['Mavi', '#2f6fd0'], ['Turkuaz', '#2bb3ad'], ['Yeşil', '#3a7d44'],
+  ['Haki', '#78745a'], ['Sarı', '#e8b923'], ['Turuncu', '#e0722f'],
+  ['Kırmızı', '#c0392b'], ['Bordo', '#7a1f2b'], ['Pembe', '#e39ab6'],
+  ['Mor', '#7e4a9e'], ['Altın', '#c9a227'], ['Gümüş', '#c0c0c0'],
+  ['Çok Renkli', 'linear-gradient(90deg,#e0722f,#2f6fd0,#3a7d44)'],
+];
+const FILTER_AUDIENCES = ['Kadın', 'Erkek', 'Unisex', 'Kız çocuk', 'Erkek çocuk', 'Bebek'];
+// Etiket -> ürün (gender, age_group) kısıtı (api.py ile aynı eşleme).
+const AUDIENCE_MAP = {
+  'Kadın': { gender: 'Kadın', age: 'Yetişkin' },
+  'Erkek': { gender: 'Erkek', age: 'Yetişkin' },
+  'Unisex': { gender: 'Unisex', age: null },
+  'Kız çocuk': { gender: 'Kadın', age: 'Çocuk' },
+  'Erkek çocuk': { gender: 'Erkek', age: 'Çocuk' },
+  'Bebek': { gender: null, age: 'Bebek' },
+};
+const FILTER_CATEGORIES = ['Elbise', 'Tişört', 'Gömlek', 'Bluz', 'Pantolon',
+  'Jean Pantolon', 'Etek', 'Şort', 'Ceket', 'Kazak', 'Sweatshirt', 'Hırka',
+  'Mont', 'Tayt', 'Tulum'];
+const FILTER_PATTERNS = ['puantiye', 'çizgili', 'çiçekli', 'ekose', 'kareli',
+  'leopar', 'kamuflaj', 'baskılı', 'dantelli'];
+
+function totalFilterCount() {
+  const priceActive = priceMin !== null || priceMax !== null;
+  return selectedColors.size + selectedAudiences.size + selectedCategories.size
+    + selectedPatterns.size + (priceActive ? 1 : 0) + (discountOnly ? 1 : 0);
+}
+
+function updateFilterIndicator() {
+  const count = totalFilterCount();
+  filterCount.textContent = String(count);
+  filterCount.hidden = count === 0;
+  clearFiltersButton.hidden = count === 0;
+}
+
+function buildFilterQuery() {
+  const params = [];
+  for (const v of selectedColors) params.push(`color=${encodeURIComponent(v)}`);
+  for (const v of selectedAudiences) params.push(`audience=${encodeURIComponent(v)}`);
+  for (const v of selectedCategories) params.push(`category=${encodeURIComponent(v)}`);
+  for (const v of selectedPatterns) params.push(`pattern=${encodeURIComponent(v)}`);
+  if (priceMin !== null) params.push(`price_min=${priceMin}`);
+  if (priceMax !== null) params.push(`price_max=${priceMax}`);
+  if (discountOnly) params.push('discount=true');
+  return params.length ? '&' + params.join('&') : '';
+}
+
+function afterFilterChange() {
+  updateFilterIndicator();
+  updateGroupCounts();
+  const query = queryInput.value.trim();
+  // Metin varsa onunla; yoksa ama filtre seçiliyse yazmadan "filtreyle gözat".
+  if (query || totalFilterCount()) {
+    performSearch(query);
+  } else {
+    // Hiç sorgu ve filtre kalmadı: sonuçları ve dinamik facet'leri sıfırla
+    // (yazmadan seçilen filtre iptal edilince ekran eski hâline dönsün).
+    searchProducts = [];
+    searchFacets = {};
+    updateDynamicFacets();
+    if (activeProductView === 'search') {
+      grid.replaceChildren();
+      meta.textContent = '';
+    }
+  }
+}
+
+function buildChipGroup(containerId, options, selectedSet, { swatch = false, count = false, single = false } = {}) {
+  const container = document.getElementById(containerId);
+  for (const opt of options) {
+    const [name, tone] = Array.isArray(opt) ? opt : [opt, null];
+    const chip = element('button', 'filter-chip' + (swatch ? ' has-swatch' : ''));
+    chip.type = 'button';
+    chip.dataset.value = name;
+    chip.setAttribute('aria-pressed', 'false');
+    chip.setAttribute('aria-label', `${name} filtresi`);
+    if (swatch) {
+      const dot = element('span', 'color-swatch');
+      dot.style.background = tone;
+      chip.append(dot);
+    }
+    chip.append(element('span', 'filter-chip-label', name));
+    if (count) {
+      const badge = element('span', 'filter-chip-count');
+      badge.hidden = true;
+      chip.append(badge);
+    }
+    chip.addEventListener('click', () => {
+      if (single) {
+        // Tek seçim: aynı gruptaki diğerlerini bırak, yalnız bunu seç (ya da bırak).
+        const wasSelected = selectedSet.has(name);
+        selectedSet.clear();
+        for (const other of container.querySelectorAll('.filter-chip')) {
+          other.setAttribute('aria-pressed', 'false');
+        }
+        if (!wasSelected) {
+          selectedSet.add(name);
+          chip.setAttribute('aria-pressed', 'true');
+        }
+      } else {
+        if (selectedSet.has(name)) selectedSet.delete(name);
+        else selectedSet.add(name);
+        chip.setAttribute('aria-pressed', String(selectedSet.has(name)));
+      }
+      afterFilterChange();
+    });
+    container.append(chip);
+  }
+}
+
+function setupPriceInputs() {
+  const minInput = document.getElementById('price-min-input');
+  const maxInput = document.getElementById('price-max-input');
+  const parse = (el) => {
+    const value = parseFloat(el.value);
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  };
+  const apply = () => {
+    priceMin = parse(minInput);
+    priceMax = parse(maxInput);
+    afterFilterChange();
+  };
+  minInput.addEventListener('change', apply);
+  maxInput.addEventListener('change', apply);
+}
+
+function buildDiscountChip() {
+  const container = document.getElementById('discount-filter');
+  const chip = element('button', 'filter-chip');
+  chip.type = 'button';
+  chip.setAttribute('aria-pressed', 'false');
+  chip.append(element('span', 'filter-chip-label', 'Sadece indirimli'));
+  chip.addEventListener('click', () => {
+    discountOnly = !discountOnly;
+    chip.setAttribute('aria-pressed', String(discountOnly));
+    afterFilterChange();
+  });
+  container.append(chip);
+}
+
+function clearAllFilters() {
+  if (!totalFilterCount()) return;
+  selectedColors.clear();
+  selectedAudiences.clear();
+  selectedCategories.clear();
+  selectedPatterns.clear();
+  priceMin = null;
+  priceMax = null;
+  discountOnly = false;
+  const minInput = document.getElementById('price-min-input');
+  const maxInput = document.getElementById('price-max-input');
+  if (minInput) minInput.value = '';
+  if (maxInput) maxInput.value = '';
+  for (const chip of filterPanel.querySelectorAll('.filter-chip')) {
+    chip.setAttribute('aria-pressed', 'false');
+  }
+  afterFilterChange();
+}
+
+buildChipGroup('color-filter', FILTER_COLORS, selectedColors, { swatch: true, count: true });
+buildChipGroup('audience-filter', FILTER_AUDIENCES, selectedAudiences, { single: true });
+buildChipGroup('category-filter', FILTER_CATEGORIES, selectedCategories, { single: true });
+buildChipGroup('pattern-filter', FILTER_PATTERNS, selectedPatterns, { single: true });
+setupPriceInputs();
+buildDiscountChip();
+
+// Her grubun başlığında kaç seçim olduğunu göster (grup kapalıyken de görünür).
+function updateGroupCounts() {
+  const counts = {
+    color: selectedColors.size, audience: selectedAudiences.size,
+    category: selectedCategories.size, pattern: selectedPatterns.size,
+    price: (priceMin !== null || priceMax !== null) ? 1 : 0,
+    discount: discountOnly ? 1 : 0,
+  };
+  for (const badge of filterPanel.querySelectorAll('[data-count]')) {
+    const n = counts[badge.dataset.count] || 0;
+    badge.textContent = String(n);
+    badge.hidden = n === 0;
+  }
+}
+
+// Dinamik kategori: arama hangi kategorileri döndürdüyse Kategori grubunda yalnız
+// onları göster. Sonuç tek kategoriye indiyse (ör. "tişört" araması) o çip
+// bilgilendirme için görünür ama pasiftir; aramanın önüne geçmez. Arama yoksa
+// (ya da kategori bilgisi yoksa) tüm kategoriler görünür. Diğer gruplar etkilenmez.
+function productAudiences(product) {
+  const result = [];
+  for (const [label, pred] of Object.entries(AUDIENCE_MAP)) {
+    if ((pred.gender === null || product.gender === pred.gender)
+        && (pred.age === null || product.age_group === pred.age)) {
+      result.push(label);
+    }
+  }
+  return result;
+}
+
+// Cinsiyet/Kategori/Desen: aramada bulunan seçenekleri göster, gerisini gizle;
+// sonuç tek seçeneğe indiyse o çip bilgi amaçlı görünür ama pasiftir (tıklanmaz).
+function updateDynamicFacet(containerId, presentValues, selectedSet) {
+  const container = document.getElementById(containerId);
+  const active = presentValues.size > 0;
+  for (const chip of container.querySelectorAll('.filter-chip')) {
+    const value = chip.dataset.value;
+    const selected = selectedSet.has(value);
+    chip.hidden = active && !presentValues.has(value) && !selected;
+    chip.disabled = active && presentValues.size <= 1 && !selected;
+  }
+}
+
+function updateDynamicFacets() {
+  const facets = searchFacets || {};
+  // Kategori: gerçek katalog facet'i (varsa) — örn. "erkek"te etek gösterilmez.
+  // Facet yoksa sonuçlardan (fallback).
+  let presentCategories;
+  if (Array.isArray(facets.category)) {
+    presentCategories = new Set(facets.category.filter(c => FILTER_CATEGORIES.includes(c)));
+  } else {
+    presentCategories = new Set();
+    for (const product of searchProducts) {
+      if (product && FILTER_CATEGORIES.includes(product.category)) {
+        presentCategories.add(product.category);
+      }
+    }
+  }
+  const presentAudiences = new Set();
+  const presentPatterns = new Set();
+  for (const product of searchProducts) {
+    if (!product) continue;
+    for (const pat of (product.patterns || [])) {
+      if (FILTER_PATTERNS.includes(pat)) presentPatterns.add(pat);
+    }
+    for (const aud of productAudiences(product)) presentAudiences.add(aud);
+  }
+  updateDynamicFacet('audience-filter', presentAudiences, selectedAudiences);
+  updateDynamicFacet('category-filter', presentCategories, selectedCategories);
+  updateDynamicFacet('pattern-filter', presentPatterns, selectedPatterns);
+  updateDynamicColorFilter();
+}
+
+// Dinamik renkler: aramada bulunan renkleri sayısıyla göster; hiç bulunmayan
+// rengi gizle (ör. kırmızı tişört yoksa Kırmızı görünmez). Bir renk seçiliyse
+// sonuçlar o renge daraldığından tüm renkleri göster (başka renk eklenebilsin)
+// ve sayıları gizle. Diğer gruplar etkilenmez.
+function updateDynamicColorFilter() {
+  const container = document.getElementById('color-filter');
+  const facets = searchFacets || {};
+  const facetColors = (facets.color && typeof facets.color === 'object'
+    && Object.keys(facets.color).length) ? facets.color : null;
+  const active = searchProducts.length > 0;
+  let count;
+  let showCounts;
+  if (facetColors) {
+    // Gerçek katalog sayıları; renk filtresi hariç tutulduğu için renk seçince de
+    // sayılar ve renkler korunur. Sayı yalnız cinsiyet+kategori verildiyse gösterilir.
+    count = (v) => facetColors[v] || 0;
+    showCounts = !!facets.show_color_counts;
+  } else {
+    const map = new Map();
+    for (const product of searchProducts) {
+      if (product && product.color) map.set(product.color, (map.get(product.color) || 0) + 1);
+    }
+    count = (v) => map.get(v) || 0;
+    showCounts = selectedColors.size === 0;
+  }
+  const keepAllFallback = !facetColors && selectedColors.size > 0;
+  // Sorgu tek renge daralttıysa (facet tek renk) o çip bilgi amaçlı görünür ama
+  // pasiftir (kategori gibi). Manuel seçimde facet rengi hariç tuttuğu için daralmaz.
+  const facetPresent = facetColors
+    ? Object.keys(facetColors).filter(k => facetColors[k] > 0).length : null;
+  for (const chip of container.querySelectorAll('.filter-chip')) {
+    const value = chip.dataset.value;
+    const selected = selectedColors.has(value);
+    const n = count(value);
+    chip.hidden = active && n === 0 && !selected && !keepAllFallback;
+    chip.disabled = !!facetColors && facetPresent <= 1 && !selected;
+    const badge = chip.querySelector('.filter-chip-count');
+    if (badge) {
+      if (active && showCounts && n > 0) {
+        badge.textContent = String(n);
+        badge.hidden = false;
+      } else {
+        badge.hidden = true;
+      }
+    }
+  }
+}
+
+// Akordeon: grup başlığına tıklayınca içeriği aç/kapat.
+for (const groupToggle of filterPanel.querySelectorAll('.filter-group-toggle')) {
+  groupToggle.addEventListener('click', () => {
+    const body = document.getElementById(groupToggle.getAttribute('aria-controls'));
+    const willOpen = body.hidden;
+    body.hidden = !willOpen;
+    groupToggle.setAttribute('aria-expanded', String(willOpen));
+  });
+}
+
+filterToggle.addEventListener('click', () => {
+  const willOpen = filterPanel.hidden;
+  filterPanel.hidden = !willOpen;
+  filterToggle.setAttribute('aria-expanded', String(willOpen));
+});
+
+clearFiltersButton.addEventListener('click', clearAllFilters);
+refreshPersonalizedProductsButton.addEventListener('click', () => {
+  loadPersonalizedProducts({ force:true, rotate:true });
+});
+clearRecentProductsButton.addEventListener('click', clearRecentProducts);
+clearSavedOutfitsButton.addEventListener('click', clearSavedOutfits);
+undoClearRecentButton.addEventListener('click', undoLastClear);
+sizePreferenceToggle.addEventListener('click', () => {
+  setSizePreferencePanel(sizePreferencePanel.hidden);
+});
+for (const select of sizePreferenceSelects) {
+  select.addEventListener('change', updateSizePreferencesFromControls);
+}
+clearSizePreferencesButton.addEventListener('click', clearSizePreferences);
+
+productTabs.addEventListener('keydown', event => {
+  const tabs = [
+    searchResultsTab,
+    personalizedProductsTab,
+    recentProductsTab,
+    savedOutfitsTab,
+  ];
+  const currentIndex = tabs.indexOf(document.activeElement);
+  if (currentIndex < 0) return;
+  let nextIndex = currentIndex;
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+  else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  else if (event.key === 'Home') nextIndex = 0;
+  else if (event.key === 'End') nextIndex = tabs.length - 1;
+  else return;
+  event.preventDefault();
+  setProductView(tabs[nextIndex].dataset.view, { focus:true });
+});
+
+outfitClose.addEventListener('click', () => hideOutfit(true));
+
+function closeOutfitOnOutsideClick(event) {
+  if (outfitSection.hidden) return;
+  if (outfitSection.contains(event.target)) return;
+  if (event.target.closest?.('button[data-outfit-id]')) return;
+  hideOutfit(false);
+}
+
+document.addEventListener('click', closeOutfitOnOutsideClick);
+
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  if (!outfitSection.hidden) {
+    event.preventDefault();
+    hideOutfit(true);
+    return;
+  }
+  if (!sizePreferencePanel.hidden) {
+    event.preventDefault();
+    setSizePreferencePanel(false);
+    sizePreferenceToggle.focus();
+  }
+});
+
+window.addEventListener('storage', event => {
+  if (event.key !== SIZE_PREFERENCES_STORAGE_KEY && event.key !== null) return;
+  sizePreferences = loadSizePreferences();
+  updateSizePreferenceUi();
+  markPersonalizedStale();
+  refreshProductsForSizePreference();
+  sizePreferenceStatus.textContent = 'Beden tercihlerin başka bir sekmeden güncellendi.';
+});
+
+window.addEventListener('resize', () => {
+  if (!activeOutfitButton || outfitSection.hidden) return;
+  if (outfitPlacementFrame !== null) cancelAnimationFrame(outfitPlacementFrame);
+  outfitPlacementFrame = requestAnimationFrame(() => {
+    outfitPlacementFrame = null;
+    if (!activeOutfitButton || outfitSection.hidden) return;
+    positionOutfitAtCard(activeOutfitButton);
+  });
+});
+
+saveRecentProducts();
+saveSavedOutfits();
+saveSizePreferences();
+updateRecentProductsTab();
+updateSavedOutfitsTab();
+updateSizePreferenceUi();
+</script>
+</body>
+</html>
